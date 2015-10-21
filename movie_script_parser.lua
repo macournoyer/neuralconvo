@@ -1,6 +1,4 @@
-local htmlparser = require 'htmlparser'
-
-local MovieScriptParser = torch.class("bot.MovieScriptParser")
+local MovieScriptParser = torch.class("e.MovieScriptParser")
 
 function MovieScriptParser:__init(options)
   assert(options)

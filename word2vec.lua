@@ -1,4 +1,4 @@
-local Word2Vec = torch.class("bot.Word2Vec")
+local Word2Vec = torch.class("e.Word2Vec")
 
 local function unpackFloat(x)
   local sign = 1
