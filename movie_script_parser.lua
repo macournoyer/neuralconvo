@@ -9,8 +9,19 @@ function MovieScriptParser:parse(file)
   self.pos = 0
   self.match = nil
 
+  -- Find start of script
+  repeat
+    self:acceptLine()
+  until self:accept("<pre>")
+
   while self:acceptDialog() or
-        self:acceptLine() do end
+        self:acceptScene() or
+        self:acceptLine() do
+    -- Stops on end of script
+    if self:accept("</pre>") then
+      break
+    end
+  end
 
   return self.script
 end
@@ -37,24 +48,29 @@ function MovieScriptParser:acceptDialog()
   -- Get the actor name (all caps)
   if self:accept(" +") and self:accept("[A-Z%- %.]+") then
     name = self.match
-    self:accept("\n")
   else
     return
   end
+
+  -- Handle inline dialog: `NAME; text`
+  if self:accept(";") and self:accept("[^\n]+") then
+    table.insert(self.script, {
+      type  = 'dialog',
+      actor = name,
+      text  = self.match
+    })
+    return true
+  end
+
+  self:accept("\n")
 
   if not self:accept("</b>") then
     return
   end
 
-  -- Get the indentation of the dialog that follows
-  if not self:accept(" +") then
-    return
-  end
-  local dialog_indent = #self.match
-
   -- Get the dialog lines
   local lines = {}
-  repeat
+  while self:accept(" +") do
     self:accept("%.+")
 
     -- Remove (...), usually who talking to or indication
@@ -72,7 +88,7 @@ function MovieScriptParser:acceptDialog()
       table.insert(lines, self.match)
     end
     self:accept("\n")
-  until not self:accept(string.rep(" ", dialog_indent))
+  end
 
   if #lines > 0 then
     table.insert(self.script, {
@@ -82,4 +98,20 @@ function MovieScriptParser:acceptDialog()
     })
     return true
   end
+end
+
+-- Try to parse the end of a scene. Any block of text that is not dialog.
+function MovieScriptParser:acceptScene()
+  if not self:accept("[^\n]*%w+") then
+    return
+  end
+
+  local last = self.script[#self.script]
+  if last and last.type ~= 'scene' then
+    table.insert(self.script, {
+      type = 'scene',
+      count = lines
+    })
+  end
+  return true
 end
