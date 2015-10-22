@@ -10,22 +10,21 @@ function MovieScriptParser:parse(file)
   self.match = nil
 
   -- Find start of script
-  repeat
-    self:acceptLine()
-  until self:accept("<pre>")
+  repeat self:acceptLine() until self:accept("<pre>")
 
-  while self:acceptDialog() or
-        self:acceptScene() or
-        self:acceptLine() do
-    -- Stops on end of script
-    if self:accept("</pre>") then
-      break
-    end
-  end
+  -- Apply rules until end of script
+  while not self:accept("</pre>") and
+        (
+          -- Rules
+          self:acceptDialog() or
+          self:acceptScene() or
+          self:acceptLine()
+        ) do end
 
   return self.script
 end
 
+-- Returns true if regexp matches and advance position
 function MovieScriptParser:accept(regexp)
   local match = string.match(self.input, "^" .. regexp, self.pos)
   if match then
@@ -35,10 +34,20 @@ function MovieScriptParser:accept(regexp)
   end
 end
 
+-- Accept anything up to the end of line
 function MovieScriptParser:acceptLine()
-  return self:accept(".-\n") or self:accept(".+$")
+  return self:accept(".-\n")
 end
 
+-- Matches:
+--
+--        NAME
+--    Dialog text
+--    more text.
+--
+-- or
+--
+--    NAME; dialog text
 function MovieScriptParser:acceptDialog()
   local name
 
@@ -81,6 +90,7 @@ function MovieScriptParser:acceptDialog()
     -- Sometimes there's a leading -
     self:accept("–")
 
+    -- Ignore leading spaces
     self:accept(" +")
     
     -- The actual line of dialog
@@ -100,18 +110,22 @@ function MovieScriptParser:acceptDialog()
   end
 end
 
--- Try to parse the end of a scene. Any block of text that is not dialog.
+-- Try to parse the end of a scene. Any block of text that is not dialog ends the scene.
 function MovieScriptParser:acceptScene()
   if not self:accept("[^\n]*%w+") then
     return
   end
 
+  self:accept("\n")
+
   local last = self.script[#self.script]
+
   if last and last.type ~= 'scene' then
     table.insert(self.script, {
       type = 'scene',
       count = lines
     })
   end
+
   return true
 end
