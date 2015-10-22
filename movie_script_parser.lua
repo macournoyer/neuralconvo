@@ -1,24 +1,18 @@
 local MovieScriptParser = torch.class("e.MovieScriptParser")
 
-function MovieScriptParser:__init(options)
-  assert(options)
-  self.actor_indent = assert(options.actor_indent)
-  self.dialog_indent = assert(options.dialog_indent)
-end
-
 function MovieScriptParser:parse(file)
   local f = assert(io.open(file, 'r'))
   self.input = f:read("*all")
   f:close()
 
-  self.dialogs = {}
+  self.script = {}
   self.pos = 0
   self.match = nil
 
   while self:acceptDialog() or
         self:acceptLine() do end
 
-  return self.dialogs
+  return self.script
 end
 
 function MovieScriptParser:accept(regexp)
@@ -38,9 +32,10 @@ function MovieScriptParser:acceptDialog()
   local name
 
   self:accept("</b>")
+  self:accept("<b>")
 
-  if self:accept("<b>" .. string.rep(" ", self.actor_indent)) and
-     self:accept("[^\n]+") then
+  -- Get the actor name (all caps)
+  if self:accept(" +") and self:accept("[A-Z%- %.]+") then
     name = self.match
     self:accept("\n")
   else
@@ -51,30 +46,39 @@ function MovieScriptParser:acceptDialog()
     return
   end
 
-  -- Dialog is intend by 25 spaces
+  -- Get the indentation of the dialog that follows
+  if not self:accept(" +") then
+    return
+  end
+  local dialog_indent = #self.match
+
+  -- Get the dialog lines
   local lines = {}
-  while self:accept(string.rep(" ", self.dialog_indent)) do
-    self:accept(" *") -- Extra leading spaces
+  repeat
+    self:accept("%.+")
 
     -- Remove (...), usually who talking to or indication
-    if self:accept("%(.-%)") then
+    if self:accept("%(.-%)") and #lines > 0 then
       table.insert(lines, " ")
     end
 
     -- Sometimes there's a leading -
     self:accept("–")
+
+    self:accept(" +")
     
     -- The actual line of dialog
     if self:accept("[^\n]+") then
       table.insert(lines, self.match)
     end
     self:accept("\n")
-  end
+  until not self:accept(string.rep(" ", dialog_indent))
 
   if #lines > 0 then
-    table.insert(self.dialogs, {
-      actor=name,
-      text=table.concat(lines)
+    table.insert(self.script, {
+      type  = 'dialog',
+      actor = name,
+      text  = table.concat(lines)
     })
     return true
   end
