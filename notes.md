@@ -1,12 +1,12 @@
 # Preprocessing data
 
-- Get movie subtitles from http://www.opensubtitles.org/
-- Subtitles -> word2vec
+- Get movie scripts from http://www.imsdb.com/
+- dialog -> word2vec
 - vec -> torch tensor
 
 # Training
 
-- Research seq2seq?
+- Research seq2seq
 - Train LSTM with tensors
 
 # References
