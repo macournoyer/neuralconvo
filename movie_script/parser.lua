@@ -1,6 +1,6 @@
-local MovieScriptParser = torch.class("e.MovieScriptParser")
+local Parser = torch.class("e.MovieScript.Parser")
 
-function MovieScriptParser:parse(file)
+function Parser:parse(file)
   local f = assert(io.open(file, 'r'))
   self.input = f:read("*all")
   f:close()
@@ -25,7 +25,7 @@ function MovieScriptParser:parse(file)
 end
 
 -- Returns true if regexp matches and advance position
-function MovieScriptParser:accept(regexp)
+function Parser:accept(regexp)
   local match = string.match(self.input, "^" .. regexp, self.pos)
   if match then
     self.pos = self.pos + #match
@@ -35,7 +35,7 @@ function MovieScriptParser:accept(regexp)
 end
 
 -- Accept anything up to the end of line
-function MovieScriptParser:acceptLine()
+function Parser:acceptLine()
   return self:accept(".-\n")
 end
 
@@ -48,7 +48,7 @@ end
 -- or
 --
 --    NAME; dialog text
-function MovieScriptParser:acceptDialog()
+function Parser:acceptDialog()
   local name
 
   self:accept("</b>")
@@ -111,7 +111,7 @@ function MovieScriptParser:acceptDialog()
 end
 
 -- Try to parse the end of a scene. Any block of text that is not dialog ends the scene.
-function MovieScriptParser:acceptScene()
+function Parser:acceptScene()
   if not self:accept("[^\n]*%w+") then
     return
   end
