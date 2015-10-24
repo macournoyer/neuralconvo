@@ -5,23 +5,23 @@ function Parser:parse(file)
   self.input = f:read("*all")
   f:close()
 
-  self.script = {}
   self.pos = 0
   self.match = nil
 
   -- Find start of script
   repeat self:acceptLine() until self:accept("<pre>")
 
-  -- Apply rules until end of script
-  while not self:accept("</pre>") and
-        (
-          -- Rules
-          self:acceptDialog() or
-          self:acceptScene() or
-          self:acceptLine()
-        ) do end
+  local script = {}
 
-  return self.script
+  -- Apply rules until end of script
+  while not self:accept("</pre>") and self:acceptLine() do
+    local dialogs = self:parseDialogs()
+    if dialogs then
+      table.insert(script, dialogs)
+    end
+  end
+
+  return script
 end
 
 -- Returns true if regexp matches and advance position
@@ -39,6 +39,26 @@ function Parser:acceptLine()
   return self:accept(".-\n")
 end
 
+function Parser:acceptSep()
+  while self:accept("</?b>") or self:accept(" +") do end
+  return self:accept("\n")
+end
+
+function Parser:parseDialogs()
+  local dialogs = {}
+
+  repeat
+    local dialog = self:parseDialog()
+    if dialog then
+      table.insert(dialogs, dialog)
+    end
+  until not self:acceptSep()
+
+  if #dialogs > 0 then
+    return dialogs
+  end
+end
+
 -- Matches:
 --
 --        NAME
@@ -48,7 +68,7 @@ end
 -- or
 --
 --    NAME; dialog text
-function Parser:acceptDialog()
+function Parser:parseDialog()
   local name
 
   self:accept("</b>")
@@ -63,12 +83,10 @@ function Parser:acceptDialog()
 
   -- Handle inline dialog: `NAME; text`
   if self:accept(";") and self:accept("[^\n]+") then
-    table.insert(self.script, {
-      type  = 'dialog',
+    return {
       actor = name,
       text  = self.match
-    })
-    return true
+    }
   end
 
   self:accept("\n")
@@ -101,31 +119,9 @@ function Parser:acceptDialog()
   end
 
   if #lines > 0 then
-    table.insert(self.script, {
-      type  = 'dialog',
+    return {
       actor = name,
       text  = table.concat(lines)
-    })
-    return true
+    }
   end
-end
-
--- Try to parse the end of a scene. Any block of text that is not dialog ends the scene.
-function Parser:acceptScene()
-  if not self:accept("[^\n]*%w+") then
-    return
-  end
-
-  self:accept("\n")
-
-  local last = self.script[#self.script]
-
-  if last and last.type ~= 'scene' then
-    table.insert(self.script, {
-      type = 'scene',
-      count = lines
-    })
-  end
-
-  return true
 end

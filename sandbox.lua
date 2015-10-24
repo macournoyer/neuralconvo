@@ -3,11 +3,12 @@ require 'e'
 -- local word2vec = e.Word2Vec("/Users/ma/Downloads/GoogleNews-vectors-negative300.bin")
 -- print(word2vec:get("for"))
 
--- print(e.MovieScriptParser():parse("data/pulp_fiction.html"))
--- print(e.MovieScriptParser():parse("data/Seinfeld-Good-News,-Bad-News.html"))
+print(e.MovieScript.Parser():parse("data/pulp_fiction.html"))
+-- print(e.MovieScript.Parser():parse("data/Seinfeld-Good-News,-Bad-News.html"))
+-- print(e.MovieScript.Parser():parse("data/Futurama-Space-Pilot-3000.html"))
 
-local script = e.MovieScript.Parser():parse("data/Futurama-Space-Pilot-3000.html")
-print(script)
+-- local script = e.MovieScript.Parser():parse("data/Futurama-Space-Pilot-3000.html")
+-- print(script)
 -- local dialog = e.MovieScript.Processor():toDialog(script)
 
 -- TODO ...
