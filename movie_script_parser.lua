@@ -1,4 +1,5 @@
-local Parser = torch.class("e.MovieScript.Parser")
+local Parser = torch.class("e.MovieScriptParser")
+local stringx = require "pl.stringx"
 
 function Parser:parse(file)
   local f = assert(io.open(file, 'r'))
@@ -11,17 +12,17 @@ function Parser:parse(file)
   -- Find start of script
   repeat self:acceptLine() until self:accept("<pre>")
 
-  local script = {}
+  local dialogs = {}
 
   -- Apply rules until end of script
   while not self:accept("</pre>") and self:acceptLine() do
-    local dialogs = self:parseDialogs()
-    if dialogs then
-      table.insert(script, dialogs)
+    local dialog = self:parseDialog()
+    if dialog then
+      table.insert(dialogs, dialog)
     end
   end
 
-  return script
+  return dialogs
 end
 
 -- Returns true if regexp matches and advance position
@@ -44,11 +45,11 @@ function Parser:acceptSep()
   return self:accept("\n")
 end
 
-function Parser:parseDialogs()
+function Parser:parseDialog()
   local dialogs = {}
 
   repeat
-    local dialog = self:parseDialog()
+    local dialog = self:parseSpeech()
     if dialog then
       table.insert(dialogs, dialog)
     end
@@ -62,24 +63,27 @@ end
 -- Matches:
 --
 --        NAME
---    Dialog text
+--    some nice text
 --    more text.
 --
 -- or
 --
---    NAME; dialog text
-function Parser:parseDialog()
+--    NAME; text
+function Parser:parseSpeech()
   local name
 
   self:accept("</b>")
   self:accept("<b>")
 
   -- Get the actor name (all caps)
-  if self:accept(" +") and self:accept("[A-Z%- %.]+") then
-    name = self.match
+  if self:accept(" +") and self:accept("[A-Z][A-Z%- %.]+") then
+    name = stringx.strip(self.match)
   else
     return
   end
+
+  -- Remove (V.O.) and such
+  self:accept(" *%([^\n]+%)")
 
   -- Handle inline dialog: `NAME; text`
   if self:accept(";") and self:accept("[^\n]+") then
