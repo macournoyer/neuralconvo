@@ -22,7 +22,7 @@ model:add(nn.LogSoftMax())
 
 -- print(model)
 
-local word2vec = e.Word2Vec("/Users/ma/Downloads/GoogleNews-vectors-negative300.bin")
+local word2vec = e.Word2Vec("data/GoogleNews-vectors-negative300.bin")
 local dialogs = e.MovieScriptParser():parse("data/Seinfeld-Good-News,-Bad-News.html")
 dialogs = e.PreProcessor():process(dialogs)
 

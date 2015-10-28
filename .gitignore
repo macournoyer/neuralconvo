@@ -1,4 +1,4 @@
-data/*.html
+data/*
 *.log
 
 # Compiled Lua sources
