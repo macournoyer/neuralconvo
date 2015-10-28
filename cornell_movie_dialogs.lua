@@ -37,6 +37,7 @@ function CornellMovieDialogs:__init(dir)
     self.lines_count = self.lines_count + 1
   end
 
+  -- TODO change structure so that it is in pair of {input,output}
   for conv in parsedLines(dir .. "/movie_conversations.txt", {"character1ID","character2ID","movieID","utteranceIDs"}) do
     local conversation = {}
     local lineIDs = stringx.split(conv.utteranceIDs:sub(3, -3), "', '")
