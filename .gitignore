@@ -1,4 +1,5 @@
 data/*.html
+*.log
 
 # Compiled Lua sources
 luac.out

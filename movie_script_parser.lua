@@ -1,5 +1,4 @@
 local Parser = torch.class("e.MovieScriptParser")
-local stringx = require "pl.stringx"
 
 function Parser:parse(file)
   local f = assert(io.open(file, 'r'))
@@ -76,14 +75,11 @@ function Parser:parseSpeech()
   self:accept("<b>")
 
   -- Get the actor name (all caps)
-  if self:accept(" +") and self:accept("[A-Z][A-Z%- %.]+") then
-    name = stringx.strip(self.match)
+  if self:accept(" +") and self:accept("[A-Z][A-Z%- %.%(%)]+") then
+    name = self.match
   else
     return
   end
-
-  -- Remove (V.O.) and such
-  self:accept(" *%([^\n]+%)")
 
   -- Handle inline dialog: `NAME; text`
   if self:accept(";") and self:accept("[^\n]+") then
@@ -102,19 +98,6 @@ function Parser:parseSpeech()
   -- Get the dialog lines
   local lines = {}
   while self:accept(" +") do
-    self:accept("%.+")
-
-    -- Remove (...), usually who talking to or indication
-    if self:accept("%(.-%)") and #lines > 0 then
-      table.insert(lines, " ")
-    end
-
-    -- Sometimes there's a leading -
-    self:accept("–")
-
-    -- Ignore leading spaces
-    self:accept(" +")
-    
     -- The actual line of dialog
     if self:accept("[^\n]+") then
       table.insert(lines, self.match)

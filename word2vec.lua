@@ -12,7 +12,7 @@ local function unpackFloat(x)
   return math.ldexp(mantissa, exponent - 127)
 end
 
-function Word2Vec:__init(dataFile)
+function Word2Vec:__init(dataFile, first)
   local data = {}
   local f = assert(io.open(dataFile, 'rb'))
 
@@ -21,6 +21,10 @@ function Word2Vec:__init(dataFile)
   f:read("*line")
 
   print("Loading word2vec file " .. dataFile .. " (" .. words .. " words)")
+
+  if first then
+    words = first
+  end
 
   local function printProgress(msg)
     io.write(string.rep("\b", 80) .. msg)
@@ -54,12 +58,25 @@ function Word2Vec:__init(dataFile)
 
     if i % 100 == 0 then
       printProgress(i .. " words loaded (" .. math.floor(i / words * 100) .. "% done)")
-      break
     end
   end
   print("")
 
   f:close()
+
+  -- Add vectors for punctuations
+  data["."] = torch.Tensor(300):zero()
+  data["."][1] = 1
+  data[","] = torch.Tensor(300):zero()
+  data[","][1] = 2
+  data[":"] = torch.Tensor(300):zero()
+  data[":"][1] = 3
+  data["..."] = torch.Tensor(300):zero()
+  data["..."][1] = 3
+  data["?"] = torch.Tensor(300):zero()
+  data["?"][1] = 4
+  data["!"] = torch.Tensor(300):zero()
+  data["!"][1] = 5
 
   self._data = data
 end
