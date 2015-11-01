@@ -13,18 +13,18 @@ function DataSet:__init(filename, loader)
   else
     print("-- " .. filename .. " not found")
     self:load()
+    print("-- Writing " .. filename .. " ...")
     torch.save(filename, {
       examples = self.examples,
       vocab = self.vocab,
       vocabSize = self.vocabSize,
     })
+    print("-- Done")
   end
 end
 
 function DataSet:load()
-  local rawData = self.loader:load()
-  local processor = e.PreProcessor()
-  local data = processor:visit(rawDataset)
+  local data = e.PreProcessor():visit(self.loader:load())
 
   self.examples = data.examples
   self.vocab = data.vocab

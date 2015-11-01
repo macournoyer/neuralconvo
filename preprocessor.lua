@@ -122,7 +122,7 @@ function PreProcessor:getWordId(word)
     self.wordFreq[word] = self.wordFreq[word] + 1
   else
     self.vocabSize = self.vocabSize + 1
-    id = self.vocabSize
+    id = torch.Tensor{self.vocabSize}:int()
     self.id2word[id] = word
     self.word2id[word] = id
     self.wordFreq[word] = 1
