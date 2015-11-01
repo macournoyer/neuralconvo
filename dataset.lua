@@ -11,7 +11,8 @@ function DataSet:__init(filename, loader)
     self.vocab = data.vocab
     self.vocabSize = data.vocabSize
   else
-    self.loader.load()
+    print("-- " .. filename .. " not found")
+    self:load()
     torch.save(filename, {
       examples = self.examples,
       vocab = self.vocab,
@@ -21,7 +22,7 @@ function DataSet:__init(filename, loader)
 end
 
 function DataSet:load()
-  local rawData = self.loader.load()
+  local rawData = self.loader:load()
   local processor = e.PreProcessor()
   local data = processor:visit(rawDataset)
 
