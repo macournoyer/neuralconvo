@@ -1,45 +1,92 @@
-require 'torch'
+require 'nn'
 require 'rnn'
-require 'e'
+require 'xlua'
 
--- Load data
-local word2vec = e.Word2Vec("data/GoogleNews-vectors-negative300.bin")
-local dataset = e.CornellMovieDialogs("data/cornell_movie_dialogs")
-local EOS = word2vec:get("</s>")
+-- Data
+local dataset = {}
 
--- Prep model
-local model = nn.Sequential()
-local inputSize = 300
-local hiddenSize = 500
+for i,word in ipairs(vocab) do
+  local t = torch.Tensor{i}
+  table.insert(dataset, t)
+end
 
-model:add(nn.FastLSTM(inputSize, hiddenSize))
-model:add(nn.FastLSTM(hiddenSize, inputSize))
--- model:add(nn.Linear(inputSize, data:vocabularySize()))
-model:add(nn.LogSoftMax())
-
--- will recurse a single continuous sequence
-model:remember('both')
-
--- Loss function
-local criterion = nn.MSECriterion()
-
--- Train
-for i,convertation in ipairs(dataset.convertations) do
-  for j,line in ipairs(convertation) do
-
-    -- Inputs
-    for t,word in e.tokenize(line.text) do
-      local vec = word2vec:get(word)
-      if vec ~= nil then
-        model:forward(vec)
-      else
-        print("Vec missing for " .. word)
-      end
+function t2w(t)
+  local max = t:max()
+  for i = 1, t:size(1) do
+    if t[i] == max then
+      return vocab[i]
     end
-    model:forward(EOS)
-
-    -- Outputs
-    -- ...
-
   end
 end
+
+function w2t(word)
+  for i,w in ipairs(vocab) do
+    if word == w then
+      return torch.Tensor{i}
+    end
+  end
+end
+
+
+-- Model
+local model = nn.Sequential()
+local inputSize = 100
+local hiddenSize = inputSize
+local dropout = 0.5
+
+model:add(nn.LookupTable(#vocab, inputSize))
+model:add(nn.SplitTable(1,2))
+model:add(nn.Sequencer(nn.FastLSTM(inputSize, hiddenSize)))
+model:add(nn.Sequencer(nn.Dropout(dropout)))
+-- model:add(nn.Sequencer(nn.FastLSTM(hiddenSize, hiddenSize)))
+-- model:add(nn.Sequencer(nn.Dropout(dropout)))
+model:add(nn.Sequencer(nn.Linear(hiddenSize, #vocab)))
+model:add(nn.JoinTable(1,2))
+model:add(nn.LogSoftMax())
+
+model:remember('both')
+
+print(model)
+
+-- Training
+local criterion = nn.ClassNLLCriterion()
+local learningRate = 0.05
+local momentum = 0.9
+local epochCount = 10
+local stepsCount = epochCount * #dataset
+
+for epoch = 1, epochCount do
+  for i,input in ipairs(dataset) do
+    local target = dataset[i+1]
+    if target == nil then
+      break
+    end
+
+    local output = model:forward(input)
+    local err = criterion:forward(output, target)
+
+    local gradOutput = criterion:backward(output, target)
+    model:backward(input, gradOutput)
+
+    model:updateGradParameters(momentum)
+    model:updateParameters(learningRate)
+    model:zeroGradParameters()
+
+    xlua.progress((epoch - 1) * #dataset + i, stepsCount)
+  end
+
+  model:forget()
+end
+xlua.progress(stepsCount, stepsCount)
+
+
+-- Testing
+model:forward(w2t("do"))
+model:forward(w2t("re"))
+local output = model:forward(w2t("mi"))
+io.write("do re mi --> ")
+for i=1,6 do
+  io.write(t2w(output) .. " ")
+  output = model:forward(w2t(t2w(output)))
+end
+print("")

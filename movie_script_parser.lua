@@ -74,7 +74,8 @@ function Parser:parseSpeech()
   self:accept("</b>")
   self:accept("<b>")
 
-  -- Get the actor name (all caps)
+  -- Get the character name (all caps)
+  -- TODO remove parenthesis from name
   if self:accept(" +") and self:accept("[A-Z][A-Z%- %.%(%)]+") then
     name = self.match
   else
@@ -84,7 +85,7 @@ function Parser:parseSpeech()
   -- Handle inline dialog: `NAME; text`
   if self:accept(";") and self:accept("[^\n]+") then
     return {
-      actor = name,
+      character = name,
       text  = self.match
     }
   end
@@ -96,6 +97,7 @@ function Parser:parseSpeech()
   end
 
   -- Get the dialog lines
+  -- TODO remove parenthesis from text
   local lines = {}
   while self:accept(" +") do
     -- The actual line of dialog
@@ -107,7 +109,7 @@ function Parser:parseSpeech()
 
   if #lines > 0 then
     return {
-      actor = name,
+      character = name,
       text  = table.concat(lines)
     }
   end

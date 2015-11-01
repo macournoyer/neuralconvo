@@ -1,7 +1,12 @@
 require 'e'
 
-local dataset = e.CornellMovieDialogs("data/cornell_movie_dialogs")
+local loader = e.CornellMovieDialogs("data/cornell_movie_dialogs")
+-- local rawDataset = loader:load()
+local dataset = e.DataSet("data/cornell_movie_dialogs.t7", loader)
 
-print(#dataset.convertations)
-print(dataset.lines_count)
-print(dataset.loaded_lines_count)
+-- local processor = e.PreProcessor()
+-- processor:visit(rawDataset)
+-- local dataset = processor.data
+
+print(#dataset.data .. " examples")
+print(dataset.vocabSize .. " words")
