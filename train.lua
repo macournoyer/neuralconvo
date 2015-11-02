@@ -1,40 +1,19 @@
 require 'nn'
 require 'rnn'
 require 'xlua'
+require 'e'
 
 -- Data
-local dataset = {}
-
-for i,word in ipairs(vocab) do
-  local t = torch.Tensor{i}
-  table.insert(dataset, t)
-end
-
-function t2w(t)
-  local max = t:max()
-  for i = 1, t:size(1) do
-    if t[i] == max then
-      return vocab[i]
-    end
-  end
-end
-
-function w2t(word)
-  for i,w in ipairs(vocab) do
-    if word == w then
-      return torch.Tensor{i}
-    end
-  end
-end
-
+local dataset = e.DataSet("data/cornell_movie_dialogs.t7",
+                          e.CornellMovieDialogs("data/cornell_movie_dialogs"))
 
 -- Model
 local model = nn.Sequential()
-local inputSize = 100
+local inputSize = 300
 local hiddenSize = inputSize
 local dropout = 0.5
 
-model:add(nn.LookupTable(#vocab, inputSize))
+model:add(nn.LookupTable(dataset.vocabSize, inputSize))
 model:add(nn.SplitTable(1,2))
 model:add(nn.Sequencer(nn.FastLSTM(inputSize, hiddenSize)))
 model:add(nn.Sequencer(nn.Dropout(dropout)))
@@ -53,40 +32,49 @@ local criterion = nn.ClassNLLCriterion()
 local learningRate = 0.05
 local momentum = 0.9
 local epochCount = 10
-local stepsCount = epochCount * #dataset
+local stepsCount = epochCount * #dataset.examples
 
 for epoch = 1, epochCount do
-  for i,input in ipairs(dataset) do
-    local target = dataset[i+1]
-    if target == nil then
-      break
+  for i, example in ipairs(dataset.examples) do
+    local inputs = example[1]
+    local targets = example[2]
+    local input
+    local output
+
+    for i, input in ipairs(inputs) do
+      output = model:forward(input)
+    end
+    output = model:forward(input)
+
+    for i, target in ipairs(targets) do
+      -- TODO review this whole block to implement seq2seq
+      local err = criterion:forward(output, target)
+
+      local gradOutput = criterion:backward(output, target)
+      model:backward(input, gradOutput)
+
+      model:updateGradParameters(momentum)
+      model:updateParameters(learningRate)
+      model:zeroGradParameters()
+
+      output = model:forward(input)
     end
 
-    local output = model:forward(input)
-    local err = criterion:forward(output, target)
-
-    local gradOutput = criterion:backward(output, target)
-    model:backward(input, gradOutput)
-
-    model:updateGradParameters(momentum)
-    model:updateParameters(learningRate)
-    model:zeroGradParameters()
-
-    xlua.progress((epoch - 1) * #dataset + i, stepsCount)
+    xlua.progress((epoch - 1) * #dataset.examples + i, stepsCount)
+    model:forget()
   end
 
-  model:forget()
 end
 xlua.progress(stepsCount, stepsCount)
 
 
 -- Testing
-model:forward(w2t("do"))
-model:forward(w2t("re"))
-local output = model:forward(w2t("mi"))
-io.write("do re mi --> ")
-for i=1,6 do
-  io.write(t2w(output) .. " ")
-  output = model:forward(w2t(t2w(output)))
-end
-print("")
+-- model:forward(w2t("do"))
+-- model:forward(w2t("re"))
+-- local output = model:forward(w2t("mi"))
+-- io.write("do re mi --> ")
+-- for i=1,6 do
+--   io.write(t2w(output) .. " ")
+--   output = model:forward(w2t(t2w(output)))
+-- end
+-- print("")
