@@ -1,5 +1,6 @@
 # TOOOs
 - Optimize dataset storage. All examples in a single giant Tensor?
+- CUDA
 
 # Preprocessing data
 
