@@ -1,3 +1,7 @@
+require 'torch'
+require 'nn'
+require 'rnn'
+
 e = {}
 
 torch.include('e', 'cornell_movie_dialogs.lua')
