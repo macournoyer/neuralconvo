@@ -37,9 +37,10 @@ local criterion = nn.ClassNLLCriterion()
 local learningRate = 0.05
 local momentum = 0.9
 local epochCount = 1
-local stepsCount = epochCount * #dataset.examples
 
 for epoch = 1, epochCount do
+  print("-- Epoch " .. epoch)
+
   for i, example in ipairs(dataset.examples) do
     local inputs = example[1]
     local targets = example[2]
@@ -68,11 +69,13 @@ for epoch = 1, epochCount do
     model:zeroGradParameters()
 
     model:forget()
-    xlua.progress((epoch - 1) * #dataset.examples + i, stepsCount)
+    xlua.progress(i, #dataset.examples)
   end
 
+  print("-- Epoch done. Saving model")
+  torch.save("data/model.t7", model)
+
 end
-xlua.progress(stepsCount, stepsCount)
 
 
 -- Testing
