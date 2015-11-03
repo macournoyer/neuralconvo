@@ -1,3 +1,6 @@
+# TOOOs
+- Optimize dataset storage. All examples in a single giant Tensor?
+
 # Preprocessing data
 
 - Get movie scripts from http://www.imsdb.com/

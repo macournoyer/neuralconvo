@@ -13,7 +13,6 @@ Also build the vocabulary.
 local DataSet = torch.class("e.DataSet")
 local xlua = require "xlua"
 local tokenizer = require "tokenizer"
-local list = require "pl.list"
 
 function DataSet:__init(filename, loader, loadFirst)
   -- Discard words with lower frequency then this
@@ -57,8 +56,8 @@ function DataSet:visit(conversations)
   self.wordFreq = {}
 
   -- Add magic tokens
-  self:getWordId("</s>") -- End of sequence
-  self:getWordId("<unknown>") -- Word dropped from vocabulary
+  self:makeWordId("</s>") -- End of sequence
+  self:makeWordId("<unknown>") -- Word dropped from vocabulary
 
   print("-- Pre-processing data")
 
@@ -89,7 +88,7 @@ function DataSet:visit(conversations)
 end
 
 function DataSet:removeLowFreqWords(input)
-  local unknown = self:getWordId("<unknown>")
+  local unknown = self:makeWordId("<unknown>")
 
   for i, id in ipairs(input) do
     local word = self.id2word[id]
@@ -120,14 +119,6 @@ function DataSet:visitConversation(lines, start)
       local targetIds = self:visitText(target.text)
 
       if inputIds and targetIds then
-        -- Reverse the input according to seq2seq paper recommendations: http://arxiv.org/abs/1409.3215
-        inputIds = list.reverse(inputIds)
-
-        -- Add end of sequence tokens
-        local eos = self:getWordId("</s>")
-        table.insert(inputIds, eos)
-        table.insert(targetIds, eos)
-
         table.insert(self.examples, { inputIds, targetIds })
       end
     end
@@ -142,13 +133,13 @@ function DataSet:visitText(text)
   end
 
   for t, word in tokenizer.tokenize(text) do
-    table.insert(words, self:getWordId(word))
+    table.insert(words, self:makeWordId(word))
   end
 
   return words
 end
 
-function DataSet:getWordId(word)
+function DataSet:makeWordId(word)
   word = word:lower()
 
   local id = self.word2id[word]
