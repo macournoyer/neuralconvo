@@ -72,9 +72,8 @@ for epoch = 1, epochCount do
     xlua.progress(i, #dataset.examples)
   end
 
-  print("-- Epoch done. Saving model")
+  print("-- Saving model")
   torch.save("data/model.t7", model)
-
 end
 
 
