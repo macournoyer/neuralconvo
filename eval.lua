@@ -2,11 +2,13 @@ require 'e'
 local tokenizer = require "tokenizer"
 
 if dataset == nil then
-  dataset = e.DataSet("data/cornell_movie_dialogs.t7",
-                      e.CornellMovieDialogs("data/cornell_movie_dialogs"))
+  -- dataset = e.DataSet("data/cornell_movie_dialogs.t7",
+  --                     e.CornellMovieDialogs("data/cornell_movie_dialogs"))
+  dataset = e.DataSet("data/cornell_movie_dialogs_tiny.t7",
+                      e.CornellMovieDialogs("data/cornell_movie_dialogs"), 1000)
 end
 
-EOS = dataset.word2id["</s>"]
+EOS = torch.IntTensor{dataset.word2id["</s>"]}
 
 if model == nil then
   print("-- Loading model")
@@ -26,22 +28,23 @@ function say(text)
   local inputs = {}
   for t, word in tokenizer.tokenize(text) do
     local t = dataset.word2id[word:lower()]
-    table.insert(inputs, t)
+    table.insert(inputs, torch.IntTensor{t})
   end
 
   model:forget()
 
   for i = #inputs, 1, -1 do
     local input = inputs[i]
-    model:forward(torch.Tensor{input})
+    model:forward(input)
   end
 
   local input = EOS
   repeat
-    local output = model:forward(torch.Tensor{input})
-    io.write(dataset.id2word[output2wordId(output)] .. " ")
-    input = output2wordId(output)
-  until input == EOS
+    local output = model:forward(input)
+    local outputWordId = output2wordId(output)
+    io.write(dataset.id2word[outputWordId] .. " ")
+    input = torch.IntTensor{outputWordId}
+  until input[1] == EOS[1]
 
   print("")
 end

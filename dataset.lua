@@ -90,7 +90,8 @@ end
 function DataSet:removeLowFreqWords(input)
   local unknown = self:makeWordId("<unknown>")
 
-  for i, id in ipairs(input) do
+  for i = 1, input:size(1) do
+    local id = input[i][1]
     local word = self.id2word[id]
 
     if word == nil then
@@ -107,6 +108,14 @@ function DataSet:removeLowFreqWords(input)
   end
 end
 
+local function table2tensor(t)
+  local tensor = torch.IntTensor(#t, 1)
+  for i,v in ipairs(t) do
+    tensor[i] = v
+  end
+  return tensor
+end
+
 function DataSet:visitConversation(lines, start)
   start = start or 1
 
@@ -119,7 +128,7 @@ function DataSet:visitConversation(lines, start)
       local targetIds = self:visitText(target.text)
 
       if inputIds and targetIds then
-        table.insert(self.examples, { inputIds, targetIds })
+        table.insert(self.examples, { table2tensor(inputIds), table2tensor(targetIds) })
       end
     end
   end
