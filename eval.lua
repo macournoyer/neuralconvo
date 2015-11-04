@@ -1,13 +1,17 @@
 require 'e'
 local tokenizer = require "tokenizer"
 
-dataset = e.DataSet("data/cornell_movie_dialogs.t7",
-                    e.CornellMovieDialogs("data/cornell_movie_dialogs"))
+if dataset == nil then
+  dataset = e.DataSet("data/cornell_movie_dialogs.t7",
+                      e.CornellMovieDialogs("data/cornell_movie_dialogs"))
+end
 
 EOS = dataset.word2id["</s>"]
 
-print("-- Loading model")
-model = torch.load("data/model.t7")
+if model == nil then
+  print("-- Loading model")
+  model = torch.load("data/model.t7")
+end
 
 function output2wordId(t)
   local max = t:max()

@@ -78,3 +78,6 @@ for epoch = 1, epochCount do
   print("-- Saving model")
   torch.save("data/model.t7", model)
 end
+
+-- Load testing script
+require "eval"
