@@ -18,7 +18,7 @@ function DataSet:__init(filename, loader, loadFirst)
   -- Discard words with lower frequency then this
   self.minWordFreq = 1
 
-  -- Loaded only first fews examples
+  -- Load only first fews examples
   self.loadFirst = loadFirst
 
   self.examples = {}

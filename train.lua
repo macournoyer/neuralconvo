@@ -1,11 +1,15 @@
 require 'e'
 require 'xlua'
 
+cmd = torch.CmdLine()
+cmd:text('Options:')
+cmd:option('--dataset', false, 'size of dataset to use')
+cmd:text()
+options = cmd:parse(arg)
+
 -- Data
--- dataset = e.DataSet("data/cornell_movie_dialogs.t7",
---                     e.CornellMovieDialogs("data/cornell_movie_dialogs"))
-dataset = e.DataSet("data/cornell_movie_dialogs_tiny.t7",
-                    e.CornellMovieDialogs("data/cornell_movie_dialogs"), 1000)
+dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full") .. ".t7",
+                    e.CornellMovieDialogs("data/cornell_movie_dialogs"), options.dataset)
 
 EOS = torch.IntTensor{dataset.word2id["</s>"]}
 

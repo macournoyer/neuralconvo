@@ -2,10 +2,14 @@ require 'e'
 local tokenizer = require "tokenizer"
 
 if dataset == nil then
-  -- dataset = e.DataSet("data/cornell_movie_dialogs.t7",
-  --                     e.CornellMovieDialogs("data/cornell_movie_dialogs"))
-  dataset = e.DataSet("data/cornell_movie_dialogs_tiny.t7",
-                      e.CornellMovieDialogs("data/cornell_movie_dialogs"), 1000)
+  cmd = torch.CmdLine()
+  cmd:text('Options:')
+  cmd:option('--datafile', "data/cornell_movie_dialogs.t7", 'data file to load')
+  cmd:text()
+  options = cmd:parse(arg)
+
+  -- Data
+  dataset = e.DataSet(options.datafile)
 end
 
 EOS = torch.IntTensor{dataset.word2id["</s>"]}
