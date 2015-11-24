@@ -79,6 +79,8 @@ local function argmax(t)
   end
 end
 
+local MAX_OUTPUT_SIZE = 20
+
 function Seq2Seq:eval(input)
   assert(self.goToken, "No goToken specified")
   assert(self.eosToken, "No eosToken specified")
@@ -89,7 +91,7 @@ function Seq2Seq:eval(input)
   -- Forward <go> and all of it's output recursively back to the decoder
   local output = self.goToken
   local outputs = {}
-  while true do
+  for i = 1, MAX_OUTPUT_SIZE do
     local predictions = self.decoder:forward(torch.Tensor{output})
     output = argmax(predictions[1])
     if output == self.eosToken then
