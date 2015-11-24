@@ -1,5 +1,6 @@
 require 'e'
 local tokenizer = require "tokenizer"
+local list = require "pl.list"
 
 if dataset == nil then
   cmd = torch.CmdLine()
@@ -17,20 +18,38 @@ if model == nil then
   model = torch.load("data/model.t7")
 end
 
-function say(text)
-  local inputs = {}
-
-  for t, word in tokenizer.tokenize(text) do
-    local id = dataset.word2id[word:lower()] or dataset.unknownToken
-    table.insert(inputs, id)
-  end
-
-  local outputs = model:eval(torch.Tensor(inputs))
+-- Word IDs tensor to sentence
+function t2s(t, reverse)
   local words = {}
 
-  for i,id in ipairs(outputs) do
-    table.insert(words, dataset.id2word[id])
+  for i = 1, t:size(1) do
+    table.insert(words, dataset.id2word[t[i]])
+  end
+
+  if reverse then
+    words = list.reverse(words)
   end
 
   return table.concat(words, " ")
+end
+
+-- for i,example in ipairs(dataset.examples) do
+--   print("-- " .. t2s(example[1], true))
+--   print(">> " .. t2s(example[2]))
+-- end
+
+function say(text)
+  local wordIds = {}
+
+  for t, word in tokenizer.tokenize(text) do
+    local id = dataset.word2id[word:lower()] or dataset.unknownToken
+    table.insert(wordIds, id)
+  end
+
+  local input = torch.Tensor(list.reverse(wordIds))
+  print("-- " .. t2s(input, true))
+
+  local output = model:eval(input)
+
+  print(">> " .. t2s(torch.Tensor(output)))
 end

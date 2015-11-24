@@ -61,8 +61,12 @@ function Seq2Seq:train(input, target)
   local zeroTensor = torch.Tensor(2):zero()
   self.encoder:backward(encoderInput, zeroTensor)
 
+  self.encoder:updateGradParameters(self.momentum)
+  self.decoder:updateGradParameters(self.momentum)
   self.decoder:updateParameters(self.learningRate)
   self.encoder:updateParameters(self.learningRate)
+  self.encoder:zeroGradParameters()
+  self.decoder:zeroGradParameters()
 
   self.decoder:forget()
   self.encoder:forget()

@@ -16,7 +16,7 @@ dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full")
                     e.CornellMovieDialogs("data/cornell_movie_dialogs"), options.dataset)
 
 -- Model
-local hiddenSize = 100
+local hiddenSize = 300
 model = e.Seq2Seq(dataset.wordsCount, hiddenSize)
 model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
@@ -24,7 +24,8 @@ model.eosToken = dataset.eosToken
 -- Training
 model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 model.learningRate = 0.5
-local epochCount = 20
+model.momentum = 0.9
+local epochCount = 3
 local minErr = 0.1
 local err = 0
 

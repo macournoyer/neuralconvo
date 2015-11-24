@@ -31,6 +31,8 @@ function M.tokenize(text)
       { "^%s+", space },
       { "^['\"]", quote },
       { "^%w+", word },
+      { "^%-+", space },
+      { "^%.+", punct },
       { "^[,:;%.%?!%-]", punct },
       { "^</?.->", tag },
       { "^.", unknown },

@@ -13,10 +13,14 @@ Also build the vocabulary.
 local DataSet = torch.class("e.DataSet")
 local xlua = require "xlua"
 local tokenizer = require "tokenizer"
+local list = require "pl.list"
 
 function DataSet:__init(filename, loader, loadFirst)
   -- Discard words with lower frequency then this
   self.minWordFreq = 1
+
+  -- Make length of one text
+  self.maxTextLen = 10
 
   -- Load only first fews examples
   self.loadFirst = loadFirst
@@ -125,6 +129,9 @@ function DataSet:visitConversation(lines, start)
       local targetIds = self:visitText(target.text)
 
       if inputIds and targetIds then
+        -- Revert inputs
+        inputIds = list.reverse(inputIds)
+
         table.insert(targetIds, 1, self.goToken)
         table.insert(targetIds, self.eosToken)
 
@@ -141,8 +148,14 @@ function DataSet:visitText(text)
     return
   end
 
+  local i = 0
+
   for t, word in tokenizer.tokenize(text) do
     table.insert(words, self:makeWordId(word))
+    i = i + 1
+    if i > self.maxTextLen then
+      break
+    end
   end
 
   if #words == 0 then
