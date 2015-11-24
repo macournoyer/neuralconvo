@@ -23,7 +23,7 @@ model.eosToken = dataset.eosToken
 
 -- Training
 model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
-model.learningRate = 0.1
+model.learningRate = 0.5
 local epochCount = 10
 local minErr = 0.1
 local err = 0
