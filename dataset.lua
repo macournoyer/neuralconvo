@@ -145,6 +145,10 @@ function DataSet:visitText(text)
     table.insert(words, self:makeWordId(word))
   end
 
+  if #words == 0 then
+    return
+  end
+
   return words
 end
 
