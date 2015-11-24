@@ -37,6 +37,9 @@ function DataSet:load(filename, loader)
     self.word2id = data.word2id
     self.id2word = data.id2word
     self.wordsCount = data.wordsCount
+    self.goToken = data.goToken
+    self.eosToken = data.eosToken
+    self.unknownToken = data.unknownToken
   else
     print("-- " .. filename .. " not found")
     self:visit(loader:load())
@@ -45,7 +48,10 @@ function DataSet:load(filename, loader)
       examples = self.examples,
       word2id = self.word2id,
       id2word = self.id2word,
-      wordsCount = self.wordsCount
+      wordsCount = self.wordsCount,
+      goToken = self.goToken,
+      eosToken = self.eosToken,
+      unknownToken = self.unknownToken
     })
   end
   print("-- Done")
@@ -56,8 +62,9 @@ function DataSet:visit(conversations)
   self.wordFreq = {}
 
   -- Add magic tokens
-  self:makeWordId("</s>") -- End of sequence
-  self:makeWordId("<unknown>") -- Word dropped from vocabulary
+  self.goToken = self:makeWordId("<go>") -- Start of sequence
+  self.eosToken = self:makeWordId("<eos>") -- End of sequence
+  self.unknownToken = self:makeWordId("<unknown>") -- Word dropped from vocabulary
 
   print("-- Pre-processing data")
 
@@ -88,32 +95,22 @@ function DataSet:visit(conversations)
 end
 
 function DataSet:removeLowFreqWords(input)
-  local unknown = self:makeWordId("<unknown>")
-
   for i = 1, input:size(1) do
-    local id = input[i][1]
+    local id = input[i]
     local word = self.id2word[id]
 
     if word == nil then
       -- Already removed
-      input[i] = unknown
+      input[i] = self.unknownToken
 
     elseif self.wordFreq[word] < self.minWordFreq then
-      input[i] = unknown
+      input[i] = self.unknownToken
       
       self.word2id[word] = nil
       self.id2word[id] = nil
       self.wordsCount = self.wordsCount - 1
     end
   end
-end
-
-local function table2tensor(t)
-  local tensor = torch.IntTensor(#t, 1)
-  for i,v in ipairs(t) do
-    tensor[i] = v
-  end
-  return tensor
 end
 
 function DataSet:visitConversation(lines, start)
@@ -128,7 +125,10 @@ function DataSet:visitConversation(lines, start)
       local targetIds = self:visitText(target.text)
 
       if inputIds and targetIds then
-        table.insert(self.examples, { table2tensor(inputIds), table2tensor(targetIds) })
+        table.insert(targetIds, 1, self.goToken)
+        table.insert(targetIds, self.eosToken)
+
+        table.insert(self.examples, { torch.IntTensor(inputIds), torch.IntTensor(targetIds) })
       end
     end
   end
