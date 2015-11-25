@@ -4,6 +4,7 @@ require 'xlua'
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'size of dataset to use (0 = all)')
+cmd:option('--cuda', false, 'Use CUDA')
 cmd:text()
 options = cmd:parse(arg)
 
@@ -21,14 +22,22 @@ model = e.Seq2Seq(dataset.wordsCount, hiddenSize)
 model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 
--- Training
+-- Training parameters
 model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 model.learningRate = 0.5
 model.momentum = 0.9
 local epochCount = 3
-local minErr = 0.1
 local err = 0
 
+-- Enabled CUDA
+if options.cuda then
+  require 'cutorch'
+  require 'cunn'
+  dataset:cuda()
+  model:cuda()
+end
+
+-- Run the experiment
 for epoch = 1, epochCount do
   print("-- Epoch " .. epoch .. " / " .. epochCount)
 
@@ -36,11 +45,6 @@ for epoch = 1, epochCount do
     local e = model:train(unpack(example))
     err = math.max(err, e)
     xlua.progress(i, #dataset.examples)
-  end
-
-  if err < minErr then
-    print("Breaking at error " .. err)
-    break
   end
 
   print("Max error: " .. err)

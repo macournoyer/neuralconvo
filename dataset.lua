@@ -61,6 +61,13 @@ function DataSet:load(filename, loader)
   print("-- Done")
 end
 
+function DataSet:cuda()
+  for i,example in ipairs(self.examples) do
+    example[1] = example[1]:cuda()
+    example[2] = example[2]:cuda()
+  end
+end
+
 function DataSet:visit(conversations)
   -- Table for keeping track of word frequency
   self.wordFreq = {}
