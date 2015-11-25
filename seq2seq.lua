@@ -1,3 +1,4 @@
+-- Based on https://github.com/Element-Research/rnn/blob/master/examples/encoder-decoder-coupling.lua
 local Seq2Seq = torch.class("e.Seq2Seq")
 
 function Seq2Seq:__init(vocabSize, hiddenSize)
@@ -71,6 +72,7 @@ function Seq2Seq:train(input, target)
   local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
   self.decoder:backward(decoderInput, gEdec)
   self:backwardConnect()
+  -- TODO this seems off! Why a zero tensor?
   self.encoder:backward(encoderInput, self.zeroTensor)
 
   self.encoder:updateGradParameters(self.momentum)
