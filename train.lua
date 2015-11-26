@@ -27,7 +27,6 @@ model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 model.learningRate = 0.5
 model.momentum = 0.9
 local epochCount = 3
-local err = 0
 
 -- Enabled CUDA
 if options.cuda then
@@ -41,13 +40,16 @@ end
 for epoch = 1, epochCount do
   print("-- Epoch " .. epoch .. " / " .. epochCount)
 
+  local errors = torch.Tensor(#dataset.examples)
+
   for i,example in ipairs(dataset.examples) do
-    local e = model:train(unpack(example))
-    err = math.max(err, e)
+    local err = model:train(unpack(example))
+    errors[i] = err
     xlua.progress(i, #dataset.examples)
   end
 
-  print("Max error: " .. err)
+  print("Error: min=" .. errors:min() .. " max=" .. errors:max() ..
+              " median=" .. errors:median()[1] .. " mean=" .. errors:mean())
 
   print("-- Saving model")
   torch.save("data/model.t7", model)
