@@ -6,11 +6,18 @@ if dataset == nil then
   cmd = torch.CmdLine()
   cmd:text('Options:')
   cmd:option('--datafile', "data/cornell_movie_dialogs.t7", 'data file to load')
+  cmd:option('--cuda', false, 'use CUDA. Training must be done on CUDA')
   cmd:text()
   options = cmd:parse(arg)
 
   -- Data
   dataset = e.DataSet(options.datafile)
+
+  -- Enabled CUDA
+  if options.cuda then
+    require 'cutorch'
+    require 'cunn'
+  end
 end
 
 if model == nil then
