@@ -40,7 +40,7 @@ end
 for epoch = 1, epochCount do
   print("-- Epoch " .. epoch .. " / " .. epochCount)
 
-  local errors = torch.Tensor(#dataset.examples)
+  local errors = torch.Tensor(#dataset.examples):zero()
 
   for i,example in ipairs(dataset.examples) do
     local err = model:train(unpack(example))
@@ -50,6 +50,7 @@ for epoch = 1, epochCount do
 
   print("Error: min=" .. errors:min() .. " max=" .. errors:max() ..
               " median=" .. errors:median()[1] .. " mean=" .. errors:mean())
+  print("Perplexity: " .. torch.exp(errors:mean()))
 
   print("-- Saving model")
   torch.save("data/model.t7", model)
