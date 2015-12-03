@@ -22,6 +22,10 @@ local function punct(token)
   return yield("punct", token)
 end
 
+local function endpunct(token)
+  return yield("endpunct", token)
+end
+
 local function unknown(token)
   return yield("unknown", token)
 end
@@ -32,8 +36,9 @@ function M.tokenize(text)
       { "^['\"]", quote },
       { "^%w+", word },
       { "^%-+", space },
-      { "^%.+", punct },
-      { "^[,:;%.%?!%-]", punct },
+      { "^[,:;%-]", punct },
+      { "^%.+", endpunct },
+      { "^[%.%?!]", endpunct },
       { "^</?.->", tag },
       { "^.", unknown },
     }, { [space]=true, [tag]=true })

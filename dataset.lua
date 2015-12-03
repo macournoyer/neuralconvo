@@ -156,7 +156,7 @@ function DataSet:visitText(text)
   for t, word in tokenizer.tokenize(text) do
     table.insert(words, self:makeWordId(word))
     -- Only keep the first sentence
-    if word == "." then
+    if t == "endpunct" then
       break
     end
   end
