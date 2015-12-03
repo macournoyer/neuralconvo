@@ -15,15 +15,14 @@ local xlua = require "xlua"
 local tokenizer = require "tokenizer"
 local list = require "pl.list"
 
-function DataSet:__init(filename, loader, loadFirst)
-  -- Discard words with lower frequency then this
-  self.minWordFreq = 1
+function DataSet:__init(filename, loader, options)
+  options = options or {}
 
-  -- Make length of one text
-  self.maxTextLen = 10
+  -- Discard words with lower frequency then this
+  self.minWordFreq = options.minWordFreq or 1
 
   -- Load only first fews examples
-  self.loadFirst = loadFirst
+  self.loadFirst = options.loadFirst
 
   self.examples = {}
   self.word2id = {}
@@ -155,14 +154,8 @@ function DataSet:visitText(text)
     return
   end
 
-  local i = 0
-
   for t, word in tokenizer.tokenize(text) do
     table.insert(words, self:makeWordId(word))
-    i = i + 1
-    if i > self.maxTextLen then
-      break
-    end
   end
 
   if #words == 0 then

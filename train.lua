@@ -4,7 +4,8 @@ require 'xlua'
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'size of dataset to use (0 = all)')
-cmd:option('--cuda', false, 'Use CUDA')
+cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
+cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
 cmd:option('--learningRate', 0.05, 'learning rate at t=0')
 cmd:option('--momentum', 0.9, 'momentum')
@@ -21,7 +22,11 @@ end
 
 -- Data
 dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full") .. ".t7",
-                    e.CornellMovieDialogs("data/cornell_movie_dialogs"), options.dataset)
+                    e.CornellMovieDialogs("data/cornell_movie_dialogs"),
+                    {
+                      loadFirst = options.dataset,
+                      minWordFreq = options.minWordFreq
+                    })
 print("Vocabulary size: " .. dataset.wordsCount)
 
 -- Model
