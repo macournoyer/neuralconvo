@@ -22,6 +22,7 @@ end
 -- Data
 dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full") .. ".t7",
                     e.CornellMovieDialogs("data/cornell_movie_dialogs"), options.dataset)
+print("Vocabulary size: " .. dataset.wordsCount)
 
 -- Model
 model = e.Seq2Seq(dataset.wordsCount, options.hiddenSize)
@@ -48,7 +49,7 @@ for epoch = 1, options.maxEpoch do
   print("-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("Learning rate: " .. model.learningRate)
 
-  local errors = torch.Tensor(#dataset.examples):zero()
+  local errors = torch.Tensor(#dataset.examples)
 
   for i,example in ipairs(dataset.examples) do
     local err = model:train(unpack(example))
