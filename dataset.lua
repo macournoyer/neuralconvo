@@ -34,7 +34,7 @@ end
 
 function DataSet:load(filename, loader)
   if path.exists(filename) then
-    print("-- Loading from " .. filename .. " ...")
+    print("Loading from " .. filename .. " ...")
     local data = torch.load(filename)
     self.examples = data.examples
     self.word2id = data.word2id
@@ -44,9 +44,9 @@ function DataSet:load(filename, loader)
     self.eosToken = data.eosToken
     self.unknownToken = data.unknownToken
   else
-    print("-- " .. filename .. " not found")
+    print("" .. filename .. " not found")
     self:visit(loader:load())
-    print("-- Writing " .. filename .. " ...")
+    print("Writing " .. filename .. " ...")
     torch.save(filename, {
       examples = self.examples,
       word2id = self.word2id,
@@ -57,7 +57,6 @@ function DataSet:load(filename, loader)
       unknownToken = self.unknownToken
     })
   end
-  print("-- Done")
 end
 
 function DataSet:cuda()
@@ -156,6 +155,10 @@ function DataSet:visitText(text)
 
   for t, word in tokenizer.tokenize(text) do
     table.insert(words, self:makeWordId(word))
+    -- Only keep the first sentence
+    if word == "." then
+      break
+    end
   end
 
   if #words == 0 then

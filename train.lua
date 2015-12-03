@@ -21,13 +21,17 @@ if options.dataset == 0 then
 end
 
 -- Data
+print("-- Loading dataset")
 dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full") .. ".t7",
                     e.CornellMovieDialogs("data/cornell_movie_dialogs"),
                     {
                       loadFirst = options.dataset,
                       minWordFreq = options.minWordFreq
                     })
-print("Vocabulary size: " .. dataset.wordsCount)
+
+print("\nDataset stats:")
+print("  Vocabulary size: " .. dataset.wordsCount)
+print("         Examples: " .. #dataset.examples)
 
 -- Model
 model = e.Seq2Seq(dataset.wordsCount, options.hiddenSize)
@@ -39,6 +43,7 @@ model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 model.learningRate = options.learningRate
 model.momentum = options.momentum
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
+local minMeanError = nil
 
 -- Enabled CUDA
 if options.cuda then
@@ -51,10 +56,11 @@ end
 -- Run the experiment
 
 for epoch = 1, options.maxEpoch do
-  print("-- Epoch " .. epoch .. " / " .. options.maxEpoch)
-  print("Learning rate: " .. model.learningRate)
+  print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
+  print("")
 
   local errors = torch.Tensor(#dataset.examples)
+  local timer = torch.Timer()
 
   for i,example in ipairs(dataset.examples) do
     local err = model:train(unpack(example))
@@ -62,12 +68,28 @@ for epoch = 1, options.maxEpoch do
     xlua.progress(i, #dataset.examples)
   end
 
-  print("Error:      min=" .. errors:min() .. " max=" .. errors:max() ..
-                   " median=" .. errors:median()[1] .. " mean=" .. errors:mean())
-  print("Perplexity: " .. torch.exp(errors:mean()))
+  timer:stop()
 
-  print("Saving model ...")
-  torch.save("data/model.t7", model)
+  print("\nFinished in " .. timer:time().real .. ' seconds. ' .. (#dataset.examples / timer:time().real) .. ' examples/sec.')
+  print("\nEpoch stats:")
+  print("           LR= " .. model.learningRate)
+  print("  Errors: min= " .. errors:min())
+  print("          max= " .. errors:max())
+  print("       median= " .. errors:median()[1])
+  print("         mean= " .. errors:mean())
+  print("          std= " .. errors:std())
+
+  if errors:mean() ~= errors:mean() then
+    print("\n!! Error is NaN. Bug? Exiting.")
+    break
+  end
+
+  -- Save the model if we improved.
+  if minMeanError == nil or errors:mean() < minMeanError then
+    print("\n(Saving model ...)")
+    torch.save("data/model.t7", model)
+    minMeanError = errors:mean()
+  end
 
   model.learningRate = model.learningRate + decayFactor
   model.learningRate = math.max(options.minLR, model.learningRate)
