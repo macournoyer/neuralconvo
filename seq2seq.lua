@@ -76,6 +76,10 @@ function Seq2Seq:train(input, target)
   local decoderOutput = self.decoder:forward(decoderInput)
   local Edecoder = self.criterion:forward(decoderOutput, decoderTarget)
 
+  if Edecoder ~= Edecoder then -- Error!
+    return Edecoder
+  end
+
   -- Backward pass
   local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
   self.decoder:backward(decoderInput, gEdec)

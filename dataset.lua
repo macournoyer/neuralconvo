@@ -15,8 +15,10 @@ local xlua = require "xlua"
 local tokenizer = require "tokenizer"
 local list = require "pl.list"
 
-function DataSet:__init(filename, loader, options)
+function DataSet:__init(loader, options)
   options = options or {}
+
+  self.examplesFilename = "data/examples.t7"
 
   -- Discard words with lower frequency then this
   self.minWordFreq = options.minWordFreq or 1
@@ -32,46 +34,42 @@ function DataSet:__init(filename, loader, options)
   self.id2word = {}
   self.wordsCount = 0
 
-  self:load(filename, loader)
+  self:load(loader)
 end
 
-function DataSet:load(filename, loader)
+function DataSet:load(loader)
+  local filename = "data/vocab.t7"
+
   if path.exists(filename) then
-    print("Loading from " .. filename .. " ...")
+    print("Loading vocabulary from " .. filename .. " ...")
     local data = torch.load(filename)
-    self.examples = data.examples
     self.word2id = data.word2id
     self.id2word = data.id2word
     self.wordsCount = data.wordsCount
     self.goToken = data.goToken
     self.eosToken = data.eosToken
     self.unknownToken = data.unknownToken
+    self.examplesCount = data.examplesCount
   else
     print("" .. filename .. " not found")
     self:visit(loader:load())
     print("Writing " .. filename .. " ...")
     torch.save(filename, {
-      examples = self.examples,
       word2id = self.word2id,
       id2word = self.id2word,
       wordsCount = self.wordsCount,
       goToken = self.goToken,
       eosToken = self.eosToken,
-      unknownToken = self.unknownToken
+      unknownToken = self.unknownToken,
+      examplesCount = self.examplesCount
     })
-  end
-end
-
-function DataSet:cuda()
-  for i,example in ipairs(self.examples) do
-    example[1] = example[1]:cuda()
-    example[2] = example[2]:cuda()
   end
 end
 
 function DataSet:visit(conversations)
   -- Table for keeping track of word frequency
   self.wordFreq = {}
+  self.examples = {}
 
   -- Add magic tokens
   self.goToken = self:makeWordId("<go>") -- Start of sequence
@@ -103,7 +101,44 @@ function DataSet:visit(conversations)
     xlua.progress(i, #self.examples)
   end
 
-  self.wordFreq = {}
+  self.wordFreq = nil
+
+  self.examplesCount = #self.examples
+  self:writeExamplesToFile()
+  self.examples = nil
+
+  collectgarbage()
+end
+
+function DataSet:writeExamplesToFile()
+  print("Writing " .. self.examplesFilename .. " ...")
+  local file = torch.DiskFile(self.examplesFilename, "w")
+
+  for i, example in ipairs(self.examples) do
+    file:writeObject(example)
+    xlua.progress(i, #self.examples)
+  end
+
+  file:close()
+end
+
+function DataSet:loadExamples(size)
+  local file = torch.DiskFile(self.examplesFilename, "r")
+  file:quiet()
+
+  local examples = {}
+
+  for i = 1, size do
+    local example = file:readObject()
+    if example == nil then
+      break
+    end
+    table.insert(examples, example)
+  end
+
+  file:close()
+
+  return examples
 end
 
 function DataSet:removeLowFreqWords(input)

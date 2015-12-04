@@ -12,6 +12,7 @@ cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
+cmd:option('--batchSize', 1000, 'number of examples to load at once')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -22,8 +23,7 @@ end
 
 -- Data
 print("-- Loading dataset")
-dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full") .. ".t7",
-                    e.CornellMovieDialogs("data/cornell_movie_dialogs"),
+dataset = e.DataSet(e.CornellMovieDialogs("data/cornell_movie_dialogs"),
                     {
                       loadFirst = options.dataset,
                       minWordFreq = options.minWordFreq
@@ -31,7 +31,7 @@ dataset = e.DataSet("data/cornell_movie_dialogs_" .. (options.dataset or "full")
 
 print("\nDataset stats:")
 print("  Vocabulary size: " .. dataset.wordsCount)
-print("         Examples: " .. #dataset.examples)
+print("         Examples: " .. dataset.examplesCount)
 
 -- Model
 model = e.Seq2Seq(dataset.wordsCount, options.hiddenSize)
@@ -49,7 +49,6 @@ local minMeanError = nil
 if options.cuda then
   require 'cutorch'
   require 'cunn'
-  dataset:cuda()
   model:cuda()
 end
 
@@ -59,18 +58,41 @@ for epoch = 1, options.maxEpoch do
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("")
 
-  local errors = torch.Tensor(#dataset.examples)
+  local errors = torch.Tensor(dataset.examplesCount):fill(0)
+  local invalid = 0
   local timer = torch.Timer()
 
-  for i,example in ipairs(dataset.examples) do
-    local err = model:train(unpack(example))
-    errors[i] = err
-    xlua.progress(i, #dataset.examples)
+  local i = 1
+  while i < dataset.examplesCount do
+    collectgarbage()
+    local examples = dataset:loadExamples(options.batchSize)
+
+    for _, example in ipairs(examples) do
+      local input, target = unpack(example)
+
+      if options.cuda then
+        input = input:cuda()
+        target = target:cuda()
+      end
+
+      local err = model:train(input, target)
+
+      -- Check if error is NaN or too big. If so, it's probably a bug.
+      if err ~= err or err < 0 or err > 1e20 then
+        invalid = invalid + 1
+        err = 1e10 -- Probably not the right thing to do ... :/
+        error("NaN error")
+      end
+
+      errors[i] = err
+      xlua.progress(i, dataset.examplesCount)
+      i = i + 1
+    end
   end
 
   timer:stop()
 
-  print("\nFinished in " .. timer:time().real .. ' seconds. ' .. (#dataset.examples / timer:time().real) .. ' examples/sec.')
+  print("\nFinished in " .. timer:time().real .. ' seconds. ' .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
   print("           LR= " .. model.learningRate)
   print("  Errors: min= " .. errors:min())
@@ -78,11 +100,7 @@ for epoch = 1, options.maxEpoch do
   print("       median= " .. errors:median()[1])
   print("         mean= " .. errors:mean())
   print("          std= " .. errors:std())
-
-  if errors:mean() ~= errors:mean() then
-    print("\n!! Error is NaN. Bug? Exiting.")
-    break
-  end
+  print("  Invalid err: " .. invalid)
 
   -- Save the model if we improved.
   if minMeanError == nil or errors:mean() < minMeanError then
@@ -93,8 +111,6 @@ for epoch = 1, options.maxEpoch do
 
   model.learningRate = model.learningRate + decayFactor
   model.learningRate = math.max(options.minLR, model.learningRate)
-
-  collectgarbage()
 end
 
 -- Load testing script
