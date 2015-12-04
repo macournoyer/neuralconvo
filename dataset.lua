@@ -7,7 +7,7 @@ Then flips it around and get the dialog from the other character's perspective:
 
   { {word_ids of character2}, {word_ids of character1} }
 
-Also build the vocabulary.
+Also builds the vocabulary.
 ]]-- 
 
 local DataSet = torch.class("e.DataSet")
@@ -21,7 +21,10 @@ function DataSet:__init(filename, loader, options)
   -- Discard words with lower frequency then this
   self.minWordFreq = options.minWordFreq or 1
 
-  -- Load only first fews examples
+  -- Maximum number of words in an example sentence
+  self.maxExampleLen = options.maxExampleLen or 25
+
+  -- Load only first fews examples (approximately)
   self.loadFirst = options.loadFirst
 
   self.examples = {}
@@ -131,7 +134,7 @@ function DataSet:visitConversation(lines, start)
 
     if target then
       local inputIds = self:visitText(input.text)
-      local targetIds = self:visitText(target.text)
+      local targetIds = self:visitText(target.text, 2)
 
       if inputIds and targetIds then
         -- Revert inputs
@@ -146,8 +149,9 @@ function DataSet:visitConversation(lines, start)
   end
 end
 
-function DataSet:visitText(text)
+function DataSet:visitText(text, additionalTokens)
   local words = {}
+  additionalTokens = additionalTokens or 0
 
   if text == "" then
     return
@@ -156,7 +160,7 @@ function DataSet:visitText(text)
   for t, word in tokenizer.tokenize(text) do
     table.insert(words, self:makeWordId(word))
     -- Only keep the first sentence
-    if t == "endpunct" then
+    if t == "endpunct" or #words >= self.maxExampleLen - additionalTokens then
       break
     end
   end
