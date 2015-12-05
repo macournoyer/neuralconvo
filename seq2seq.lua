@@ -11,14 +11,14 @@ end
 function Seq2Seq:buildModel()
   self.encoder = nn.Sequential()
   self.encoder:add(nn.LookupTable(self.vocabSize, self.hiddenSize))
-  self.encoder:add(nn.SplitTable(1, 2))
+  self.encoder:add(nn.SplitTable(1, 1))
   self.encoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize)
   self.encoder:add(nn.Sequencer(self.encoderLSTM))
   self.encoder:add(nn.SelectTable(-1))
 
   self.decoder = nn.Sequential()
   self.decoder:add(nn.LookupTable(self.vocabSize, self.hiddenSize))
-  self.decoder:add(nn.SplitTable(1, 2))
+  self.decoder:add(nn.SplitTable(1, 1))
   self.decoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize)
   self.decoder:add(nn.Sequencer(self.decoderLSTM))
   self.decoder:add(nn.Sequencer(nn.Linear(self.hiddenSize, self.vocabSize)))
@@ -61,9 +61,6 @@ function Seq2Seq:train(input, target)
   local encoderInput = input
   local decoderInput = target:sub(1, -2)
   local decoderTarget = target:sub(2, -1)
-
-  -- Split for batching
-  decoderTarget = nn.SplitTable(1, 1):forward(decoderTarget)
 
   -- Forward pass
   self.encoder:forward(encoderInput)
