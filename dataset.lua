@@ -122,23 +122,30 @@ function DataSet:writeExamplesToFile()
   file:close()
 end
 
-function DataSet:loadExamples(size)
+function DataSet:batches(size)
   local file = torch.DiskFile(self.examplesFilename, "r")
   file:quiet()
+  local done = false
 
-  local examples = {}
-
-  for i = 1, size do
-    local example = file:readObject()
-    if example == nil then
-      break
+  return function()
+    if done then
+      return
     end
-    table.insert(examples, example)
+
+    local examples = {}
+
+    for i = 1, size do
+      local example = file:readObject()
+      if example == nil then
+        done = true
+        file:close()
+        return examples
+      end
+      table.insert(examples, example)
+    end
+
+    return examples
   end
-
-  file:close()
-
-  return examples
 end
 
 function DataSet:removeLowFreqWords(input)

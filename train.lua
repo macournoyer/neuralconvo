@@ -63,9 +63,8 @@ for epoch = 1, options.maxEpoch do
   local timer = torch.Timer()
 
   local i = 1
-  while i < dataset.examplesCount do
+  for examples in dataset:batches(options.batchSize) do
     collectgarbage()
-    local examples = dataset:loadExamples(options.batchSize)
 
     for _, example in ipairs(examples) do
       local input, target = unpack(example)
