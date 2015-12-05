@@ -62,11 +62,6 @@ function Seq2Seq:train(input, target)
   local decoderInput = target:sub(1, -2)
   local decoderTarget = target:sub(2, -1)
 
-  -- TODO pad & batch data
-  -- local encoderInput = torch.cat(input, input, 2):transpose(1, 2)
-  -- local decoderInput = torch.cat(target:sub(1, -2), target:sub(1, -2), 2):transpose(1, 2)
-  -- local decoderTarget = torch.cat(target:sub(2, -1), target:sub(2, -1), 2):transpose(1, 2)
-
   -- Split for batching
   decoderTarget = nn.SplitTable(1, 1):forward(decoderTarget)
 
@@ -84,7 +79,6 @@ function Seq2Seq:train(input, target)
   local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
   self.decoder:backward(decoderInput, gEdec)
   self:backwardConnect()
-  -- TODO this seems off! Why a zero tensor?
   self.encoder:backward(encoderInput, self.zeroTensor)
 
   self.encoder:updateGradParameters(self.momentum)
