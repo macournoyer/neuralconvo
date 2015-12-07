@@ -1,4 +1,5 @@
 data/*
+log/*
 *.log
 
 # Compiled Lua sources

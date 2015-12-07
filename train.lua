@@ -59,7 +59,6 @@ for epoch = 1, options.maxEpoch do
   print("")
 
   local errors = torch.Tensor(dataset.examplesCount):fill(0)
-  local invalid = 0
   local timer = torch.Timer()
 
   local i = 1
@@ -78,9 +77,7 @@ for epoch = 1, options.maxEpoch do
 
       -- Check if error is NaN or too big. If so, it's probably a bug.
       if err ~= err or err < 0 or err > 1e20 then
-        invalid = invalid + 1
-        err = 1e10 -- Probably not the right thing to do ... :/
-        error("NaN error")
+        error("Invalid error! Exiting.")
       end
 
       errors[i] = err
@@ -91,7 +88,7 @@ for epoch = 1, options.maxEpoch do
 
   timer:stop()
 
-  print("\nFinished in " .. timer:time().real .. ' seconds. ' .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
+  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
   print("           LR= " .. model.learningRate)
   print("  Errors: min= " .. errors:min())
@@ -99,9 +96,8 @@ for epoch = 1, options.maxEpoch do
   print("       median= " .. errors:median()[1])
   print("         mean= " .. errors:mean())
   print("          std= " .. errors:std())
-  print("  Invalid err: " .. invalid)
 
-  -- Save the model if we improved.
+  -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
     print("\n(Saving model ...)")
     torch.save("data/model.t7", model)
