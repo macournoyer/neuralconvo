@@ -4,7 +4,7 @@ This is my attempt at implementing [Sequence to Sequence Learning with Neural Ne
 
 And reproduce the results in [A Neural Conversational Model](http://arxiv.org/pdf/1506.05869.pdf).
 
-## Sample conversations
+## Sample conversation
 
 Here's a sample conversations after training for 10 epoch with only 5000 examples using the following command:
 
@@ -46,6 +46,12 @@ _(Note: All words are down-cased before training)_
 > 
 > me: Leaving this conversation.
 > bot: yes .
+
+The results are far less impressive than in the "Neural Conversational Model" paper. But I suspect this is because of the extremely small dataset and small network I used.
+
+Sadly, my graphic card doesn't have enough memory to training larger networks.
+
+If you do manage to run it on a larger network do let me know!
 
 ## Installation
 
