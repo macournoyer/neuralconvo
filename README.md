@@ -6,7 +6,46 @@ And reproduce the results in [A Neural Conversational Model](http://arxiv.org/pd
 
 ## Sample conversations
 
-TODO
+Here's a sample conversations after training for 10 epoch with only 5000 examples using the following command:
+
+```sh
+$ th train.lua --cuda --dataset 5000 --hiddenSize 1000
+```
+
+_(Note: All words are down-cased before training)_
+
+> me: hi
+> bot: hey .
+> 
+> me: what's your name?
+> bot: pris .
+> 
+> me: how old are you?
+> bot: thirty five eleven .
+> 
+> me: what's 2 + 2?
+> bot: nothing .
+> 
+> me: That's funny.
+> bot: no .
+> 
+> me: Where are you from?
+> bot: helsinki , there !
+> 
+> me: That's a nice place.
+> bot: yes .
+> 
+> me: How long have you been living in Helsinki?
+> bot: thirty years .
+> 
+> me: Talk to you later.
+> bot: what ?
+> 
+> me: I'm leaving.
+> bot: leaving what ?
+> 
+> me: Leaving this conversation.
+> bot: yes .
 
 ## Installation
 
@@ -27,14 +66,16 @@ Download the [Cornell Movie-Dialogs Corpus](http://www.mpi-sws.org/~cristian/Cor
 th train.lua [-h / options]
 ```
 
-Use the `--dataset NUMBER` option to control the size of the dataset. Training on the full dataset can take about a day for a single epoch.
+Use the `--dataset NUMBER` option to control the size of the dataset. Training on the full dataset takes about 5h for a single epoch.
 
-The model will be saved to `data/model.t7` after an epoch if the model improved(errors decreased).
+The model will be saved to `data/model.t7` after each epoch if it has improved (error decreased).
 
-## Evaluating
+## Testing
+
+To load the model and have a conversation:
 
 ```sh
 th -i eval.lua
 # ...
-th> say "Hello there!"
+th> say "Hello."
 ```

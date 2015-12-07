@@ -88,7 +88,7 @@ for epoch = 1, options.maxEpoch do
 
   timer:stop()
 
-  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
+  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
   print("           LR= " .. model.learningRate)
   print("  Errors: min= " .. errors:min())
