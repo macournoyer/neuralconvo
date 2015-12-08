@@ -68,7 +68,7 @@ function Seq2Seq:train(input, target)
   local decoderOutput = self.decoder:forward(decoderInput)
   local Edecoder = self.criterion:forward(decoderOutput, decoderTarget)
 
-  if Edecoder ~= Edecoder then -- Error!
+  if Edecoder ~= Edecoder then -- Exist early on bad error
     return Edecoder
   end
 

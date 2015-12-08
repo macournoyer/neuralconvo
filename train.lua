@@ -3,7 +3,7 @@ require 'xlua'
 
 cmd = torch.CmdLine()
 cmd:text('Options:')
-cmd:option('--dataset', 0, 'size of dataset to use (0 = all)')
+cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
 cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
@@ -75,8 +75,8 @@ for epoch = 1, options.maxEpoch do
 
       local err = model:train(input, target)
 
-      -- Check if error is NaN or too big. If so, it's probably a bug.
-      if err ~= err or err < 0 or err > 1e20 then
+      -- Check if error is NaN. If so, it's probably a bug.
+      if err ~= err then
         error("Invalid error! Exiting.")
       end
 

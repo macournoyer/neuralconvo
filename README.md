@@ -109,4 +109,4 @@ th> say "Hello."
 
 Copyright Marc-Andre Cournoyer <macournoyer@gmail.com>.
 
-Thanks to [rnn](https://github.com/Element-Research/rnn), Torch, [The Unreasonable Effectiveness of Recurrent Neural Networks](http://karpathy.github.io/2015/05/21/rnn-effectiveness/), [Understanding LSTM Networks](http://colah.github.io/posts/2015-08-Understanding-LSTMs/), [TensorFlow seq2seq tutorial](https://www.tensorflow.org/versions/master/tutorials/seq2seq/index.html) and [Computer, respond to this email - Google Research Blog](http://googleresearch.blogspot.ca/2015/11/computer-respond-to-this-email.html).
+Thanks to [rnn](https://github.com/Element-Research/rnn), Torch, [The Unreasonable Effectiveness of Recurrent Neural Networks](http://karpathy.github.io/2015/05/21/rnn-effectiveness/), [Understanding LSTM Networks](http://colah.github.io/posts/2015-08-Understanding-LSTMs/), [TensorFlow seq2seq tutorial](https://www.tensorflow.org/versions/master/tutorials/seq2seq/index.html), [Computer, respond to this email - Google Research Blog](http://googleresearch.blogspot.ca/2015/11/computer-respond-to-this-email.html) and papers mentioned above.
