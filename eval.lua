@@ -1,4 +1,4 @@
-require 'e'
+require 'neuralconvo'
 local tokenizer = require "tokenizer"
 local list = require "pl.list"
 
@@ -10,7 +10,7 @@ if dataset == nil then
   options = cmd:parse(arg)
 
   -- Data
-  dataset = e.DataSet()
+  dataset = neuralconvo.DataSet()
 
   -- Enabled CUDA
   if options.cuda then

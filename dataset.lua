@@ -10,7 +10,7 @@ Then flips it around and get the dialog from the other character's perspective:
 Also builds the vocabulary.
 ]]-- 
 
-local DataSet = torch.class("e.DataSet")
+local DataSet = torch.class("neuralconvo.DataSet")
 local xlua = require "xlua"
 local tokenizer = require "tokenizer"
 local list = require "pl.list"

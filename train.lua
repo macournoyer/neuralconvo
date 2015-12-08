@@ -1,4 +1,4 @@
-require 'e'
+require 'neuralconvo'
 require 'xlua'
 
 cmd = torch.CmdLine()
@@ -23,7 +23,7 @@ end
 
 -- Data
 print("-- Loading dataset")
-dataset = e.DataSet(e.CornellMovieDialogs("data/cornell_movie_dialogs"),
+dataset = neuralconvo.DataSet(neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"),
                     {
                       loadFirst = options.dataset,
                       minWordFreq = options.minWordFreq
@@ -34,7 +34,7 @@ print("  Vocabulary size: " .. dataset.wordsCount)
 print("         Examples: " .. dataset.examplesCount)
 
 -- Model
-model = e.Seq2Seq(dataset.wordsCount, options.hiddenSize)
+model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize)
 model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 

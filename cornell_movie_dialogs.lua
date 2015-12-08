@@ -1,4 +1,4 @@
-local CornellMovieDialogs = torch.class("e.CornellMovieDialogs")
+local CornellMovieDialogs = torch.class("neuralconvo.CornellMovieDialogs")
 local stringx = require "pl.stringx"
 local xlua = require "xlua"
 

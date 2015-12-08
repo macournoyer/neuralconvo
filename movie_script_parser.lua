@@ -1,4 +1,4 @@
-local Parser = torch.class("e.MovieScriptParser")
+local Parser = torch.class("neuralconvo.MovieScriptParser")
 
 function Parser:parse(file)
   local f = assert(io.open(file, 'r'))
