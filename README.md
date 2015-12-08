@@ -17,44 +17,44 @@ $ th train.lua --cuda --dataset 5000 --hiddenSize 1000
 
 _(Note: All words are down-cased before training)_
 
-> **me:** hi
-> **bot:** hey .
+> **me:** Hi
+> **bot:** Hey.
 > 
-> **me:** what's your name?
-> **bot:** pris .
+> **me:** What's your name?
+> **bot:** Pris.
 > 
-> **me:** how old are you?
-> **bot:** thirty five eleven .
+> **me:** How old are you?
+> **bot:** Thirty five eleven.
 > 
-> **me:** what's 2 + 2?
-> **bot:** nothing .
+> **me:** What's 2 + 2?
+> **bot:** Nothing.
 > 
 > **me:** That's funny.
-> **bot:** no .
+> **bot:** No.
 > 
 > **me:** Where are you from?
-> **bot:** helsinki , there !
+> **bot:** Helsinki, there!
 > 
 > **me:** That's a nice place.
-> **bot:** yes .
+> **bot:** Yes.
 > 
 > **me:** How long have you been living in Helsinki?
-> **bot:** thirty years .
+> **bot:** Thirty years.
 > 
 > **me:** Talk to you later.
-> **bot:** what ?
+> **bot:** What?
 > 
 > **me:** I'm leaving.
-> **bot:** leaving what ?
+> **bot:** Leaving what?
 > 
 > **me:** Leaving this conversation.
-> **bot:** yes .
+> **bot:** Yes.
 
 The results are far less impressive than in the paper. But this is probably because of the extremely small dataset and small network I used.
 
-Sadly, my graphic card doesn't have enough memory to training larger networks.
+Sadly, my graphic card doesn't have enough memory to train larger networks.
 
-If you do manage to run it on a larger network do let me know!
+If you manage to run it on a larger network do let me know!
 
 ## Installing
 

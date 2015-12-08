@@ -24,25 +24,16 @@ if model == nil then
   model = torch.load("data/model.t7")
 end
 
--- Word IDs tensor to sentence
-function t2s(t, reverse)
+-- Word ID tensor to words
+function t2w(t)
   local words = {}
 
   for i = 1, t:size(1) do
     table.insert(words, dataset.id2word[t[i]])
   end
 
-  if reverse then
-    words = list.reverse(words)
-  end
-
-  return table.concat(words, " ")
+  return words
 end
-
--- for i,example in ipairs(dataset.examples) do
---   print("-- " .. t2s(example[1], true))
---   print(">> " .. t2s(example[2]))
--- end
 
 function say(text)
   local wordIds = {}
@@ -53,9 +44,7 @@ function say(text)
   end
 
   local input = torch.Tensor(list.reverse(wordIds))
-  print("-- " .. t2s(input, true))
-
   local output = model:eval(input)
 
-  print(">> " .. t2s(torch.Tensor(output)))
+  print(">> " .. tokenizer.join(t2w(torch.Tensor(output))))
 end

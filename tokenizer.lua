@@ -44,4 +44,12 @@ function M.tokenize(text)
     }, { [space]=true, [tag]=true })
 end
 
+function M.join(words)
+  local s = table.concat(words, " ")
+  s = s:gsub("^%l", string.upper)
+  s = s:gsub(" (') ", "%1")
+  s = s:gsub(" ([,:;%-%.%?!])", "%1")
+  return s
+end
+
 return M
