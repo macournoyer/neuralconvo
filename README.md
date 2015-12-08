@@ -2,17 +2,17 @@
 
 This is an attempt at implementing [Sequence to Sequence Learning with Neural Networks (seq2seq)](http://arxiv.org/abs/1409.3215) and reproducing the results in [A Neural Conversational Model](http://arxiv.org/abs/1506.05869) (aka the Google chatbot).
 
-The Google chatbot paper [became famous](http://www.sciencealert.com/google-s-ai-bot-thinks-the-purpose-of-life-is-to-live-forever) after answering "the purpose of life":
+The Google chatbot paper [became famous](http://www.sciencealert.com/google-s-ai-bot-thinks-the-purpose-of-life-is-to-live-forever) after cleverly answering a few philosophical questions, such as:
 
 > **Human:** What is the purpose of living?
 > **Machine:** To live forever.
 
 ## Sample conversation
 
-Here's a sample conversations after training for 10 epoch with only 5000 examples, using the following command:
+Here's a sample conversation after training for 10 epoch with only 5000 examples, using the following command:
 
 ```sh
-$ th train.lua --cuda --dataset 5000 --hiddenSize 1000
+th train.lua --cuda --dataset 5000 --hiddenSize 1000
 ```
 
 _(Note: All words are down-cased before training)_
@@ -50,7 +50,7 @@ _(Note: All words are down-cased before training)_
 > **me:** Leaving this conversation.
 > **bot:** Yes.
 
-The results are far less impressive than in the paper. But this is probably because of the extremely small dataset and small network I used.
+The results are fun but far less impressive than in the paper. This is probably because of the extremely small dataset and small network I used.
 
 Sadly, my graphic card doesn't have enough memory to train larger networks.
 
