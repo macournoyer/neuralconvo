@@ -4,7 +4,7 @@ This is an attempt at implementing [Sequence to Sequence Learning with Neural Ne
 
 The Google chatbot paper [became famous](http://www.sciencealert.com/google-s-ai-bot-thinks-the-purpose-of-life-is-to-live-forever) after cleverly answering a few philosophical questions, such as:
 
-> **Human:** What is the purpose of living?
+> **Human:** What is the purpose of living?  
 > **Machine:** To live forever.
 
 ## Sample conversation
@@ -17,37 +17,37 @@ th train.lua --cuda --dataset 5000 --hiddenSize 1000
 
 _(Note: All words are down-cased before training)_
 
-> **me:** Hi
+> **me:** Hi  
 > **bot:** Hey.
 > 
-> **me:** What's your name?
+> **me:** What's your name?  
 > **bot:** Pris.
 > 
-> **me:** How old are you?
+> **me:** How old are you?  
 > **bot:** Thirty five eleven.
 > 
-> **me:** What's 2 + 2?
+> **me:** What's 2 + 2?  
 > **bot:** Nothing.
 > 
-> **me:** That's funny.
+> **me:** That's funny.  
 > **bot:** No.
 > 
-> **me:** Where are you from?
+> **me:** Where are you from?  
 > **bot:** Helsinki, there!
 > 
-> **me:** That's a nice place.
+> **me:** That's a nice place.  
 > **bot:** Yes.
 > 
-> **me:** How long have you been living in Helsinki?
+> **me:** How long have you been living in Helsinki?  
 > **bot:** Thirty years.
 > 
-> **me:** Talk to you later.
+> **me:** Talk to you later.  
 > **bot:** What?
 > 
-> **me:** I'm leaving.
+> **me:** I'm leaving.  
 > **bot:** Leaving what?
 > 
-> **me:** Leaving this conversation.
+> **me:** Leaving this conversation.  
 > **bot:** Yes.
 
 The results are fun but far less impressive than in the paper. This is probably because of the extremely small dataset and small network I used.
