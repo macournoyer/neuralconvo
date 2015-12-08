@@ -24,8 +24,6 @@ Here's a sample conversation after training for 10 epoch with only 5000 examples
 th train.lua --cuda --dataset 5000 --hiddenSize 1000
 ```
 
-_(Note: All words are down-cased before training)_
-
 > **me:** Hi  
 > **bot:** Hey.
 > 
@@ -58,6 +56,8 @@ _(Note: All words are down-cased before training)_
 > 
 > **me:** Leaving this conversation.  
 > **bot:** Yes.
+
+_(Disclaimer: nonsensical responses have been removed.)_
 
 The results are fun but far less impressive than in the paper. This is probably because of the extremely small dataset and small network I used.
 
