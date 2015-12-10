@@ -13,7 +13,7 @@ Also builds the vocabulary.
 local DataSet = torch.class("neuralconvo.DataSet")
 local xlua = require "xlua"
 local tokenizer = require "tokenizer"
-local list = require "pl.list"
+local list = require "pl.List"
 
 function DataSet:__init(loader, options)
   options = options or {}

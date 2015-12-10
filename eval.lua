@@ -1,6 +1,6 @@
 require 'neuralconvo'
 local tokenizer = require "tokenizer"
-local list = require "pl.list"
+local list = require "pl.List"
 
 if dataset == nil then
   cmd = torch.CmdLine()
