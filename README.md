@@ -83,7 +83,7 @@ If you manage to run it on a larger network do let me know!
    luarocks install cunn
    ```
 
-3. Download the [Cornell Movie-Dialogs Corpus](http://www.mpi-sws.org/~cristian/Cornell_Movie-Dialogs_Corpus.html) and extract all the files into data/cornell_movie-dialogs.
+3. Download the [Cornell Movie-Dialogs Corpus](http://www.mpi-sws.org/~cristian/Cornell_Movie-Dialogs_Corpus.html) and extract all the files into data/cornell_movie_dialogs.
 
 ## Training
 
