@@ -1,6 +1,7 @@
 data/*
 log/*
 *.log
+sandbox.lua
 
 # Compiled Lua sources
 luac.out
