@@ -1,11 +1,13 @@
 require 'neuralconvo'
 local tokenizer = require "tokenizer"
 local list = require "pl.List"
+local options = {}
 
 if dataset == nil then
   cmd = torch.CmdLine()
   cmd:text('Options:')
   cmd:option('--cuda', false, 'use CUDA. Training must be done on CUDA')
+  cmd:option('--debug', false, 'show debug info')
   cmd:text()
   options = cmd:parse(arg)
 
@@ -24,15 +26,26 @@ if model == nil then
   model = torch.load("data/model.t7")
 end
 
--- Word ID tensor to words
-function t2w(t)
+-- Word IDs to sentence
+function pred2sent(wordIds, i)
   local words = {}
+  i = i or 1
 
-  for i = 1, t:size(1) do
-    table.insert(words, dataset.id2word[t[i]])
+  for _, wordId in ipairs(wordIds) do
+    local word = dataset.id2word[wordId[i]]
+    table.insert(words, word)
   end
 
-  return words
+  return tokenizer.join(words)
+end
+
+function printProbabilities(wordIds, probabilities, i)
+  local words = {}
+
+  for p, wordId in ipairs(wordIds) do
+    local word = dataset.id2word[wordId[i]]
+    print(string.format("%-23s(%4d%%)", word, probabilities[p][i] * 100))
+  end
 end
 
 function say(text)
@@ -44,7 +57,14 @@ function say(text)
   end
 
   local input = torch.Tensor(list.reverse(wordIds))
-  local output = model:eval(input)
+  local wordIds, probabilities = model:eval(input)
 
-  print(">> " .. tokenizer.join(t2w(torch.Tensor(output))))
+  print(">> " .. pred2sent(wordIds))
+
+  if options.debug then
+    for i = 1, 4 do
+      print(string.rep("-", 30))
+      printProbabilities(wordIds, probabilities, i)
+    end
+  end
 end

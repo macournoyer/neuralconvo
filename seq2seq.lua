@@ -91,15 +91,6 @@ function Seq2Seq:train(input, target)
   return Edecoder
 end
 
-local function argmax(t)
-  local max = t:max()
-  for i = 1, t:size(1) do
-    if t[i] == max then
-      return i
-    end
-  end
-end
-
 local MAX_OUTPUT_SIZE = 20
 
 function Seq2Seq:eval(input)
@@ -109,20 +100,31 @@ function Seq2Seq:eval(input)
   self.encoder:forward(input)
   self:forwardConnect(input:size(1))
 
+  local predictions = {}
+  local probabilities = {}
+
   -- Forward <go> and all of it's output recursively back to the decoder
   local output = self.goToken
-  local outputs = {}
   for i = 1, MAX_OUTPUT_SIZE do
-    local predictions = self.decoder:forward(torch.Tensor{output})
-    output = argmax(predictions[1])
+    local prediction = self.decoder:forward(torch.Tensor{output})[1]
+    -- prediction contains the probabilities for each word IDs.
+    -- The index of the probability is the word ID.
+    local prob, wordIds = prediction:sort(1, true)
+
+    -- First one is the most likely.
+    output = wordIds[1]
+
+    -- Terminate on EOS token
     if output == self.eosToken then
       break
     end
-    table.insert(outputs, output)
+
+    table.insert(predictions, wordIds)
+    table.insert(probabilities, prob)
   end 
 
   self.decoder:forget()
   self.encoder:forget()
 
-  return outputs
+  return predictions, probabilities
 end
