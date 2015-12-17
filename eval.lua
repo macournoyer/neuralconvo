@@ -39,13 +39,19 @@ function pred2sent(wordIds, i)
   return tokenizer.join(words)
 end
 
-function printProbabilities(wordIds, probabilities, i)
-  local words = {}
+function printProbabilityTable(wordIds, probabilities, num)
+  print(string.rep("-", num * 22))
 
   for p, wordId in ipairs(wordIds) do
-    local word = dataset.id2word[wordId[i]]
-    print(string.format("%-23s(%4d%%)", word, probabilities[p][i] * 100))
+    local line = "| "
+    for i = 1, num do
+      local word = dataset.id2word[wordId[i]]
+      line = line .. string.format("%-10s(%4d%%)", word, probabilities[p][i] * 100) .. "  |  "
+    end
+    print(line)
   end
+
+  print(string.rep("-", num * 22))
 end
 
 function say(text)
@@ -62,9 +68,6 @@ function say(text)
   print(">> " .. pred2sent(wordIds))
 
   if options.debug then
-    for i = 1, 4 do
-      print(string.rep("-", 30))
-      printProbabilities(wordIds, probabilities, i)
-    end
+    printProbabilityTable(wordIds, probabilities, 4)
   end
 end
