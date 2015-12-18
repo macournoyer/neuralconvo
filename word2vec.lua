@@ -1,70 +1,64 @@
+-- Based on https://github.com/rotmanmi/word2vec.torch
 local Word2Vec = torch.class("neuralconvo.Word2Vec")
 require 'xlua'
 
-local function unpackFloat(x)
-  local sign = 1
-  local mantissa = string.byte(x, 3) % 128
-  for i = 2, 1, -1 do mantissa = mantissa * 256 + string.byte(x, i) end
-  if string.byte(x, 4) > 127 then sign = -1 end
-  local exponent = (string.byte(x, 4) % 128) * 2 +
-                   math.floor(string.byte(x, 3) / 128)
-  if exponent == 0 then return 0 end
-  mantissa = (math.ldexp(mantissa, -23) + 1) * sign
-  return math.ldexp(mantissa, exponent - 127)
+local MAX_W = 50
+
+local function readString(file)  
+  local str = {}
+  for i = 1, MAX_W do
+    local char = file:readChar()
+    
+    if char == 32 or char == 10 or char == 0 then
+      break
+    else
+      str[#str+1] = char
+    end
+  end
+  str = torch.CharStorage(str)
+  return str:string()
 end
 
-function Word2Vec:__init(dataFile, first)
-  local data = {}
-  local f = assert(io.open(dataFile, 'rb'))
+function Word2Vec:__init(binFile, first)
+  print("Loading word2vec file " .. binFile)
 
-  local words = assert(f:read("*number"))
-  local vecSize = assert(f:read("*number"))
-  f:read("*line")
+  local file = torch.DiskFile(binFile, 'r')
+  --Reading Header
+  file:ascii()
+  local words = file:readInt()
+  local vecSize = file:readInt()
 
-  print("Loading word2vec file " .. dataFile .. " (" .. words .. " words)")
-
+  print(words .. " words in file")
   if first then
+    print("Limiting to " .. first .. " words")
     words = first
   end
 
+  self.w2vvocab = {}
+  self.v2wvocab = {}
+  self.M = torch.FloatTensor(words, vecSize)
+
+  file:binary()
   for i = 1, words do
-    local word = "", c
-    while true do
-      c = f:read(1)
-      if c == ' ' then
-        break
-      end
-      word = word .. c
-    end
-
-    local vectors = {}, vector
-    local len = 0
-
-    for v = 1, vecSize do
-      vector = unpackFloat(assert(f:read(4)))
-      len = len + vector ^ 2
-      table.insert(vectors, vector)
-    end
-    len = math.sqrt(len)
-    for v = 1, vecSize do
-      vectors[v] = vectors[v] / len
-    end
-
-    data[word] = torch.Tensor(vectors)
-
+    local str = readString(file)
+    local vecrep = file:readFloat(300)
+    vecrep = torch.FloatTensor(vecrep)
+    local norm = torch.norm(vecrep,2)
+    if norm ~= 0 then vecrep:div(norm) end
+    self.w2vvocab[str] = i
+    self.v2wvocab[i] = str
+    self.M[{{i},{}}] = vecrep
     xlua.progress(i, words)
   end
 
-  f:close()
-
-  self._data = data
+  file:close()
 end
 
-function Word2Vec:toVec(word)
-  return self._data[word]
+function Word2Vec:get(word)
+   local ind = self.w2vvocab[word]
+   return self.M[ind]
 end
 
--- Based on https://github.com/rotmanmi/word2vec.torch
 function Word2Vec:distance(vec, k)
   local k = k or 1  
   --self.zeros = self.zeros or torch.zeros(self.M:size(1));
@@ -75,8 +69,8 @@ function Word2Vec:distance(vec, k)
   local returnwords = {}
   local returndistances = {}
   for i = 1,k do
-    table.insert(returnwords, w2vutils.v2wvocab[oldindex[i]])
+    table.insert(returnwords, self.v2wvocab[oldindex[i]])
     table.insert(returndistances, distances[i])
   end
-  return {returndistances, returnwords}
+  return returnwords, returndistances
 end
