@@ -2,11 +2,11 @@
 local Word2Vec = torch.class("neuralconvo.Word2Vec")
 require 'xlua'
 
-local MAX_W = 50
+local MAX_WORD_LEN = 50
 
 local function readString(file)  
   local str = {}
-  for i = 1, MAX_W do
+  for i = 1, MAX_WORD_LEN do
     local char = file:readChar()
     
     if char == 32 or char == 10 or char == 0 then
@@ -30,7 +30,7 @@ function Word2Vec:__init(binFile, first)
 
   print(words .. " words in file")
   if first then
-    print("Limiting to " .. first .. " words")
+    print("(Limiting to first " .. first .. " words)")
     words = first
   end
 
@@ -61,7 +61,6 @@ end
 
 function Word2Vec:distance(vec, k)
   local k = k or 1  
-  --self.zeros = self.zeros or torch.zeros(self.M:size(1));
   local norm = vec:norm(2)
   vec:div(norm)
   local distances = torch.mv(self.M ,vec)
