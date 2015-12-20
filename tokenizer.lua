@@ -33,8 +33,8 @@ end
 function M.tokenize(text)
   return lexer.scan(text, {
       { "^%s+", space },
-      { "^['\"]", quote },
-      { "^%w+", word },
+      { "^[%w']+", word },
+      { "^[\"]", quote },
       { "^%-+", space },
       { "^[,:;%-]", punct },
       { "^%.+", endpunct },

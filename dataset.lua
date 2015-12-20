@@ -20,63 +20,24 @@ function DataSet:__init(loader, options)
 
   self.examplesFilename = "data/examples.t7"
 
-  -- Discard words with lower frequency then this
-  self.minWordFreq = options.minWordFreq or 1
-
   -- Maximum number of words in an example sentence
   self.maxExampleLen = options.maxExampleLen or 25
 
   -- Load only first fews examples (approximately)
   self.loadFirst = options.loadFirst
 
-  self.examples = {}
-  self.word2id = {}
-  self.id2word = {}
-  self.wordsCount = 0
-
-  self:load(loader)
-end
-
-function DataSet:load(loader)
-  local filename = "data/vocab.t7"
-
-  if path.exists(filename) then
-    print("Loading vocabulary from " .. filename .. " ...")
-    local data = torch.load(filename)
-    self.word2id = data.word2id
-    self.id2word = data.id2word
-    self.wordsCount = data.wordsCount
-    self.goToken = data.goToken
-    self.eosToken = data.eosToken
-    self.unknownToken = data.unknownToken
-    self.examplesCount = data.examplesCount
-  else
-    print("" .. filename .. " not found")
-    self:visit(loader:load())
-    print("Writing " .. filename .. " ...")
-    torch.save(filename, {
-      word2id = self.word2id,
-      id2word = self.id2word,
-      wordsCount = self.wordsCount,
-      goToken = self.goToken,
-      eosToken = self.eosToken,
-      unknownToken = self.unknownToken,
-      examplesCount = self.examplesCount
-    })
-  end
+  self.vocab = neuralconvo.Word2Vec("data/GoogleNews-vectors-negative300.bin", 1000)
+  self:visit(loader:load())
 end
 
 function DataSet:visit(conversations)
-  -- Table for keeping track of word frequency
-  self.wordFreq = {}
   self.examples = {}
 
   -- Add magic tokens
-  self.goToken = self:makeWordId("<go>") -- Start of sequence
-  self.eosToken = self:makeWordId("<eos>") -- End of sequence
-  self.unknownToken = self:makeWordId("<unknown>") -- Word dropped from vocabulary
+  self.goToken = self.vocab:get("</s>") -- Start of sequence
+  self.eosToken = self.vocab:get("</s>") -- End of sequence
 
-  print("-- Pre-processing data")
+  print("Pre-processing data")
 
   local total = self.loadFirst or #conversations * 2
 
@@ -93,25 +54,9 @@ function DataSet:visit(conversations)
     xlua.progress(#conversations + i, total)
   end
 
-  print("-- Removing low frequency words")
-
-  for i, datum in ipairs(self.examples) do
-    self:removeLowFreqWords(datum[1])
-    self:removeLowFreqWords(datum[2])
-    xlua.progress(i, #self.examples)
-  end
-
-  self.wordFreq = nil
-
   self.examplesCount = #self.examples
-  self:writeExamplesToFile()
-  self.examples = nil
-
-  collectgarbage()
-end
-
-function DataSet:writeExamplesToFile()
-  print("Writing " .. self.examplesFilename .. " ...")
+  
+  print("Writing " .. self.examplesFilename)
   local file = torch.DiskFile(self.examplesFilename, "w")
 
   for i, example in ipairs(self.examples) do
@@ -120,6 +65,9 @@ function DataSet:writeExamplesToFile()
   end
 
   file:close()
+  self.examples = nil
+
+  collectgarbage()
 end
 
 function DataSet:batches(size)
@@ -148,23 +96,15 @@ function DataSet:batches(size)
   end
 end
 
-function DataSet:removeLowFreqWords(input)
-  for i = 1, input:size(1) do
-    local id = input[i]
-    local word = self.id2word[id]
+local function table2tensor(tbl)
+  assert(#tbl > 0)
+  local t = torch.FloatTensor(#tbl, tbl[1]:size(1))
 
-    if word == nil then
-      -- Already removed
-      input[i] = self.unknownToken
-
-    elseif self.wordFreq[word] < self.minWordFreq then
-      input[i] = self.unknownToken
-      
-      self.word2id[word] = nil
-      self.id2word[id] = nil
-      self.wordsCount = self.wordsCount - 1
-    end
+  for i, v in ipairs(tbl) do
+    t[i] = v
   end
+
+  return t
 end
 
 function DataSet:visitConversation(lines, start)
@@ -185,22 +125,33 @@ function DataSet:visitConversation(lines, start)
         table.insert(targetIds, 1, self.goToken)
         table.insert(targetIds, self.eosToken)
 
-        table.insert(self.examples, { torch.IntTensor(inputIds), torch.IntTensor(targetIds) })
+        table.insert(self.examples, { table2tensor(inputIds), table2tensor(targetIds) })
       end
     end
   end
 end
 
 function DataSet:visitText(text, additionalTokens)
-  local words = {}
   additionalTokens = additionalTokens or 0
+
+  local words = {}
+  local unknownWords = 0
 
   if text == "" then
     return
   end
 
   for t, word in tokenizer.tokenize(text) do
-    table.insert(words, self:makeWordId(word))
+    -- Ignore punctuations
+    if t ~= "punct" and t ~= "endpunct" then
+      local vec = self.vocab:get(word) or self.vocab:get(word:lower())
+      if vec then
+        table.insert(words, vec)
+      else
+        unknownWords = unknownWords + 1
+      end
+    end
+
     -- Only keep the first sentence
     if t == "endpunct" or #words >= self.maxExampleLen - additionalTokens then
       break
@@ -211,23 +162,11 @@ function DataSet:visitText(text, additionalTokens)
     return
   end
 
-  return words
-end
-
-function DataSet:makeWordId(word)
-  word = word:lower()
-
-  local id = self.word2id[word]
-
-  if id then
-    self.wordFreq[word] = self.wordFreq[word] + 1
-  else
-    self.wordsCount = self.wordsCount + 1
-    id = self.wordsCount
-    self.id2word[id] = word
-    self.word2id[word] = id
-    self.wordFreq[word] = 1
+  -- Ignore sentence if more than 10% of words are unknown
+  -- TODO log ignored words and their frequency?
+  if unknownWords / #words > 0.1 then
+    return
   end
 
-  return id
+  return words
 end

@@ -4,7 +4,6 @@ require 'xlua'
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
-cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
 cmd:option('--learningRate', 0.05, 'learning rate at t=0')
@@ -25,13 +24,13 @@ end
 print("-- Loading dataset")
 dataset = neuralconvo.DataSet(neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"),
                     {
-                      loadFirst = options.dataset,
-                      minWordFreq = options.minWordFreq
+                      loadFirst = options.dataset
                     })
 
 print("\nDataset stats:")
-print("  Vocabulary size: " .. dataset.wordsCount)
 print("         Examples: " .. dataset.examplesCount)
+
+do return end
 
 -- Model
 model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize)
