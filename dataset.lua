@@ -23,19 +23,26 @@ function DataSet:__init(loader, options)
   -- Maximum number of words in an example sentence
   self.maxExampleLen = options.maxExampleLen or 25
 
+  -- Max ratio of unknown words / known words in a sentence.
+  -- Or else sentence is discarded.
+  self.maxUnknownWordsRatio = 0
+
   -- Load only first fews examples (approximately)
   self.loadFirst = options.loadFirst
 
-  self.vocab = neuralconvo.Word2Vec("data/GoogleNews-vectors-negative300.bin", 1000)
-  self:visit(loader:load())
+  self.vocab = neuralconvo.Word2Vec("data/GoogleNews-vectors-negative300.bin", 100000)
+
+  -- Add magic tokens
+  self.goToken = torch.FloatTensor(self.vocab.vecSize):fill(1) -- Start of sequence
+  self.eosToken = self.vocab:get("</s>") -- End of sequence
+
+  if not path.exists(self.examplesFilename) then
+    self:visit(loader:load())
+  end
 end
 
 function DataSet:visit(conversations)
   self.examples = {}
-
-  -- Add magic tokens
-  self.goToken = self.vocab:get("</s>") -- Start of sequence
-  self.eosToken = self.vocab:get("</s>") -- End of sequence
 
   print("Pre-processing data")
 
@@ -54,10 +61,11 @@ function DataSet:visit(conversations)
     xlua.progress(#conversations + i, total)
   end
 
-  self.examplesCount = #self.examples
-  
   print("Writing " .. self.examplesFilename)
   local file = torch.DiskFile(self.examplesFilename, "w")
+
+  self.examplesCount = #self.examples
+  file:writeInt(self.examplesCount)
 
   for i, example in ipairs(self.examples) do
     file:writeObject(example)
@@ -70,8 +78,19 @@ function DataSet:visit(conversations)
   collectgarbage()
 end
 
+function DataSet:size()
+  if self.examplesCount == nil then
+    local file = torch.DiskFile(self.examplesFilename, "r")
+    self.examplesCount = file:readInt()
+    file:close()
+  end
+
+  return self.examplesCount
+end
+
 function DataSet:batches(size)
   local file = torch.DiskFile(self.examplesFilename, "r")
+  file:readInt() -- examplesCount
   file:quiet()
   local done = false
 
@@ -98,7 +117,7 @@ end
 
 local function table2tensor(tbl)
   assert(#tbl > 0)
-  local t = torch.FloatTensor(#tbl, tbl[1]:size(1))
+  local t = torch.Tensor(#tbl, tbl[1]:size(1))
 
   for i, v in ipairs(tbl) do
     t[i] = v
@@ -162,9 +181,9 @@ function DataSet:visitText(text, additionalTokens)
     return
   end
 
-  -- Ignore sentence if more than 10% of words are unknown
-  -- TODO log ignored words and their frequency?
-  if unknownWords / #words > 0.1 then
+  -- Ignore sentence if too much unknown (not in vocabulary) words.
+  -- TODO log ignored words and their frequency
+  if unknownWords / #words > self.maxUnknownWordsRatio then
     return
   end
 

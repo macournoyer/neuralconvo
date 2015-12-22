@@ -25,21 +25,21 @@ function Word2Vec:__init(binFile, first)
   local file = torch.DiskFile(binFile, 'r')
   --Reading Header
   file:ascii()
-  local words = file:readInt()
-  local vecSize = file:readInt()
+  self.words = file:readInt()
+  self.vecSize = file:readInt()
 
-  print(words .. " words in file")
+  print(self.words .. " words in file")
   if first then
     print("(Limiting to first " .. first .. " words)")
-    words = first
+    self.words = first
   end
 
   self.w2vvocab = {}
   self.v2wvocab = {}
-  self.M = torch.FloatTensor(words, vecSize)
+  self.M = torch.FloatTensor(self.words, self.vecSize)
 
   file:binary()
-  for i = 1, words do
+  for i = 1, self.words do
     local str = readString(file)
     local vecrep = file:readFloat(300)
     vecrep = torch.FloatTensor(vecrep)
@@ -48,13 +48,17 @@ function Word2Vec:__init(binFile, first)
     self.w2vvocab[str] = i
     self.v2wvocab[i] = str
     self.M[{{i},{}}] = vecrep
-    xlua.progress(i, words)
+    xlua.progress(i, self.words)
   end
 
   file:close()
 end
 
 function Word2Vec:get(word)
+   return self:lookup(word) or self:lookup(word:lower())
+end
+
+function Word2Vec:lookup(word)
    local ind = self.w2vvocab[word]
    return self.M[ind]
 end

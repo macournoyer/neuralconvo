@@ -28,17 +28,15 @@ dataset = neuralconvo.DataSet(neuralconvo.CornellMovieDialogs("data/cornell_movi
                     })
 
 print("\nDataset stats:")
-print("         Examples: " .. dataset.examplesCount)
-
-do return end
+print("         Examples: " .. dataset:size())
 
 -- Model
-model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize)
-model.goToken = dataset.goToken
-model.eosToken = dataset.eosToken
+model = neuralconvo.Seq2Seq(dataset.vocab.vecSize, options.hiddenSize)
+model.goToken = assert(dataset.goToken)
+model.eosToken = assert(dataset.eosToken)
 
 -- Training parameters
-model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
+model.criterion = nn.SequencerCriterion(nn.MSECriterion())
 model.learningRate = options.learningRate
 model.momentum = options.momentum
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
@@ -57,7 +55,7 @@ for epoch = 1, options.maxEpoch do
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("")
 
-  local errors = torch.Tensor(dataset.examplesCount):fill(0)
+  local errors = torch.Tensor(dataset:size()):fill(0)
   local timer = torch.Timer()
 
   local i = 1
@@ -80,14 +78,14 @@ for epoch = 1, options.maxEpoch do
       end
 
       errors[i] = err
-      xlua.progress(i, dataset.examplesCount)
+      xlua.progress(i, dataset:size())
       i = i + 1
     end
   end
 
   timer:stop()
 
-  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
+  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset:size() / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
   print("           LR= " .. model.learningRate)
   print("  Errors: min= " .. errors:min())

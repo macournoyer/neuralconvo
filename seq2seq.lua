@@ -10,19 +10,18 @@ end
 
 function Seq2Seq:buildModel()
   self.encoder = nn.Sequential()
-  self.encoder:add(nn.LookupTable(self.vocabSize, self.hiddenSize))
   self.encoder:add(nn.SplitTable(1, 2))
+  -- self.encoder:add(nn.Sequencer(nn.Linear(self.vocabSize, self.vocabSize)))
   self.encoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize)
   self.encoder:add(nn.Sequencer(self.encoderLSTM))
   self.encoder:add(nn.SelectTable(-1))
 
   self.decoder = nn.Sequential()
-  self.decoder:add(nn.LookupTable(self.vocabSize, self.hiddenSize))
   self.decoder:add(nn.SplitTable(1, 2))
   self.decoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize)
   self.decoder:add(nn.Sequencer(self.decoderLSTM))
-  self.decoder:add(nn.Sequencer(nn.Linear(self.hiddenSize, self.vocabSize)))
-  self.decoder:add(nn.Sequencer(nn.LogSoftMax()))
+  -- self.decoder:add(nn.Sequencer(nn.Linear(self.hiddenSize, self.vocabSize)))
+  -- self.decoder:add(nn.Sequencer(nn.LogSoftMax()))
 
   self.encoder:zeroGradParameters()
   self.decoder:zeroGradParameters()
@@ -104,27 +103,25 @@ function Seq2Seq:eval(input)
   local probabilities = {}
 
   -- Forward <go> and all of it's output recursively back to the decoder
+  local outputs = {}
   local output = self.goToken
   for i = 1, MAX_OUTPUT_SIZE do
-    local prediction = self.decoder:forward(torch.Tensor{output})[1]
-    -- prediction contains the probabilities for each word IDs.
-    -- The index of the probability is the word ID.
-    local prob, wordIds = prediction:sort(1, true)
-
-    -- First one is the most likely.
-    output = wordIds[1]
+    print(output[1])
+    local t = torch.Tensor(1, self.vocabSize)
+    t[1] = output
+    output = self.decoder:forward(t)[1]
 
     -- Terminate on EOS token
+    -- TODO use cos distance?
     if output == self.eosToken then
       break
     end
 
-    table.insert(predictions, wordIds)
-    table.insert(probabilities, prob)
+    table.insert(outputs, output:clone())
   end 
 
   self.decoder:forget()
   self.encoder:forget()
 
-  return predictions, probabilities
+  return outputs
 end

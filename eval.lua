@@ -13,6 +13,7 @@ if dataset == nil then
 
   -- Data
   dataset = neuralconvo.DataSet()
+  vocab = dataset.vocab
 
   -- Enabled CUDA
   if options.cuda then
@@ -54,20 +55,33 @@ function printProbabilityTable(wordIds, probabilities, num)
   print(string.rep("-", num * 22))
 end
 
+function table2tensor(tbl)
+  assert(#tbl > 0)
+  local t = torch.Tensor(#tbl, tbl[1]:size(1))
+
+  for i, v in ipairs(tbl) do
+    t[i] = v
+  end
+
+  return t
+end
+
 function say(text)
   local wordIds = {}
 
   for t, word in tokenizer.tokenize(text) do
-    local id = dataset.word2id[word:lower()] or dataset.unknownToken
+    local id = assert(vocab:get(word), "Unknown word: " .. word)
     table.insert(wordIds, id)
   end
 
-  local input = torch.Tensor(list.reverse(wordIds))
-  local wordIds, probabilities = model:eval(input)
+  local input = torch.Tensor(table2tensor(list.reverse(wordIds)))
+  local outputs = model:eval(input)
 
-  print(">> " .. pred2sent(wordIds))
+  -- print(">> " .. pred2sent(wordIds))
 
   if options.debug then
     printProbabilityTable(wordIds, probabilities, 4)
   end
+
+  return outputs
 end
