@@ -96,7 +96,8 @@ for epoch = 1, options.maxEpoch do
   print("       median= " .. errors:median()[1])
   print("         mean= " .. errors:mean())
   print("          std= " .. errors:std())
-
+  print("          ppl= " .. torch.exp(errors:mean()))
+  
   -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
     print("\n(Saving model ...)")
