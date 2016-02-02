@@ -17,7 +17,7 @@ local list = require "pl.List"
 
 function DataSet:__init(loader, options)
   options = options or {}
-
+  
   self.examplesFilename = "data/examples.t7"
 
   -- Discard words with lower frequency then this
@@ -52,7 +52,8 @@ function DataSet:load(loader)
     self.examplesCount = data.examplesCount
   else
     print("" .. filename .. " not found")
-    self:visit(loader:load())
+    self:visit(loader:load(),filename)
+    --[[
     print("Writing " .. filename .. " ...")
     torch.save(filename, {
       word2id = self.word2id,
@@ -63,10 +64,11 @@ function DataSet:load(loader)
       unknownToken = self.unknownToken,
       examplesCount = self.examplesCount
     })
+    ]]--
   end
 end
 
-function DataSet:visit(conversations)
+function DataSet:visit(conversations, filename)
   -- Table for keeping track of word frequency
   self.wordFreq = {}
   self.examples = {}
@@ -78,7 +80,9 @@ function DataSet:visit(conversations)
 
   print("-- Pre-processing data")
 
-  local total = self.loadFirst or #conversations * 2
+  -- ZZ
+  --local total = self.loadFirst or #conversations * 2
+  local total = self.loadFirst or #conversations
 
   for i, conversation in ipairs(conversations) do
     if i > total then break end
@@ -87,21 +91,35 @@ function DataSet:visit(conversations)
   end
 
   -- Revisit from the perspective of 2nd character
+  --[[
   for i, conversation in ipairs(conversations) do
     if #conversations + i > total then break end
     self:visitConversation(conversation, 2)
     xlua.progress(#conversations + i, total)
   end
+  --]]
 
   print("-- Removing low frequency words")
 
   for i, datum in ipairs(self.examples) do
-    self:removeLowFreqWords(datum[1])
-    self:removeLowFreqWords(datum[2])
+    self:removeLowFreqWords(datum[1]) --query 
+    self:removeLowFreqWords(datum[2]) --response
     xlua.progress(i, #self.examples)
   end
 
   self.wordFreq = nil
+
+  -- Save dictionary first before processing examples 
+  print("Writing " .. filename .. " ...")
+  torch.save(filename, {
+    word2id = self.word2id,
+    id2word = self.id2word,
+    wordsCount = self.wordsCount,
+    goToken = self.goToken,
+    eosToken = self.eosToken,
+    unknownToken = self.unknownToken,
+    examplesCount = self.examplesCount
+    })
 
   self.examplesCount = #self.examples
   self:writeExamplesToFile()
@@ -200,7 +218,11 @@ function DataSet:visitText(text, additionalTokens)
   end
 
   for t, word in tokenizer.tokenize(text) do
+    -- check word before insert
     table.insert(words, self:makeWordId(word))
+    --if self.wordFreq[word] >= self.minWordFreq then 
+      table.insert(words, self:makeWordId(word))
+    --end 
     -- Only keep the first sentence
     if t == "endpunct" or #words >= self.maxExampleLen - additionalTokens then
       break

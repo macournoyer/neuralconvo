@@ -8,6 +8,7 @@ if dataset == nil then
   cmd:text('Options:')
   cmd:option('--cuda', false, 'use CUDA. Training must be done on CUDA')
   cmd:option('--debug', false, 'show debug info')
+  cmd:option('--model_name', 'model', 'specify model_name output')
   cmd:text()
   options = cmd:parse(arg)
 
@@ -23,7 +24,10 @@ end
 
 if model == nil then
   print("-- Loading model")
-  model = torch.load("data/model.t7")
+  model_n = "model/"..options.model_name..".t7"
+  print(model_n)
+  model = torch.load(model_n)
+  print("-- Finished Loading model")
 end
 
 -- Word IDs to sentence
