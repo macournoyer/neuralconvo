@@ -105,8 +105,26 @@ th -i eval.lua
 th> say "Hello."
 ```
 
-## Credits
+## License
 
-Copyright Marc-Andre Cournoyer <macournoyer@gmail.com>.
+MIT License
 
-Thanks to [rnn](https://github.com/Element-Research/rnn), Torch, [The Unreasonable Effectiveness of Recurrent Neural Networks](http://karpathy.github.io/2015/05/21/rnn-effectiveness/), [Understanding LSTM Networks](http://colah.github.io/posts/2015-08-Understanding-LSTMs/), [TensorFlow seq2seq tutorial](https://www.tensorflow.org/versions/master/tutorials/seq2seq/index.html), [Computer, respond to this email - Google Research Blog](http://googleresearch.blogspot.ca/2015/11/computer-respond-to-this-email.html) and papers mentioned above.
+Copyright (c) 2016 Marc-Andre Cournoyer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
