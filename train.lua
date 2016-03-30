@@ -6,6 +6,7 @@ cmd:text('Options:')
 cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
 cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
 cmd:option('--cuda', false, 'use CUDA')
+cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
 cmd:option('--learningRate', 0.05, 'learning rate at t=0')
 cmd:option('--momentum', 0.9, 'momentum')
@@ -50,7 +51,7 @@ if options.cuda then
   require 'cutorch'
   require 'cunn'
   model:cuda()
-else
+elseif options.opencl then
   require 'cltorch'
   require 'clnn'
   model:cl()
@@ -76,7 +77,7 @@ for epoch = 1, options.maxEpoch do
       if options.cuda then
         input = input:cuda()
         target = target:cuda()
-      else 
+      elseif options.opencl then
         input = input:cl()
         target = target:cl()
       end
