@@ -13,7 +13,6 @@ cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 1000, 'number of examples to load at once')
---cmd:option('--opencl',0,'use OpenCL (instead of CUDA)')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -77,6 +76,9 @@ for epoch = 1, options.maxEpoch do
       if options.cuda then
         input = input:cuda()
         target = target:cuda()
+      else 
+        input = input:cl()
+        target = target:cl()
       end
 
       local err = model:train(input, target)
