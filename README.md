@@ -24,6 +24,12 @@ Here's a sample conversation after training for 10 epoch with only 5000 examples
 th train.lua --cuda --dataset 5000 --hiddenSize 1000
 ```
 
+for opencl, you can use the following command:
+
+```sh
+th train.lua --opencl --dataset 5000 --hiddenSize 1000
+```
+
 > **me:** Hi  
 > **bot:** Hey.
 > 
@@ -82,6 +88,13 @@ If you manage to run it on a larger network do let me know!
    luarocks install cutorch
    luarocks install cunn
    ```
+   
+   To train with opencl install the lastest Opencl torch lib:
+
+   ```sh
+   luarocks install cltorch
+   luarocks install clnn
+   ```
 
 3. Download the [Cornell Movie-Dialogs Corpus](http://www.mpi-sws.org/~cristian/Cornell_Movie-Dialogs_Corpus.html) and extract all the files into data/cornell_movie_dialogs.
 
@@ -96,6 +109,7 @@ Use the `--dataset NUMBER` option to control the size of the dataset. Training o
 The model will be saved to `data/model.t7` after each epoch if it has improved (error decreased).
 
 ## Testing
+**still have problem for cltorch**
 
 To load the model and have a conversation:
 

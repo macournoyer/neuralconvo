@@ -41,6 +41,17 @@ function Seq2Seq:cuda()
   self.zeroTensor = self.zeroTensor:cuda()
 end
 
+function Seq2Seq:cl()
+  self.encoder:cl()
+  self.decoder:cl()
+
+  if self.criterion then
+    self.criterion:cl()
+  end
+
+  self.zeroTensor = self.zeroTensor:cl()
+end
+
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
 function Seq2Seq:forwardConnect(inputSeqLen)
   self.decoderLSTM.userPrevOutput =
