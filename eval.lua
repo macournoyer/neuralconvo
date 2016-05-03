@@ -7,6 +7,7 @@ if dataset == nil then
   cmd = torch.CmdLine()
   cmd:text('Options:')
   cmd:option('--cuda', false, 'use CUDA. Training must be done on CUDA')
+  cmd:option('--opencl', false, 'use OpenCL. Training must be done on OpenCL')
   cmd:option('--debug', false, 'show debug info')
   cmd:text()
   options = cmd:parse(arg)
@@ -18,6 +19,9 @@ if dataset == nil then
   if options.cuda then
     require 'cutorch'
     require 'cunn'
+  elseif options.opencl then
+    require 'cltorch'
+    require 'clnn'
   end
 end
 
