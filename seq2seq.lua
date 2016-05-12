@@ -109,18 +109,19 @@ function Seq2Seq:eval(input)
   local probabilities = {}
 
   -- Forward <go> and all of it's output recursively back to the decoder
-  local output = self.goToken
+  local output = {self.goToken}
   for i = 1, MAX_OUTPUT_SIZE do
-    local prediction = self.decoder:forward(torch.Tensor{output})[1]
+    local prediction = self.decoder:forward(torch.Tensor(output))[#output]
     -- prediction contains the probabilities for each word IDs.
     -- The index of the probability is the word ID.
-    local prob, wordIds = prediction:sort(1, true)
+    local prob, wordIds = prediction:topk(5, 1, true, true)
 
     -- First one is the most likely.
-    output = wordIds[1]
+    next_output = wordIds[1]
+    table.insert(output, next_output)
 
     -- Terminate on EOS token
-    if output == self.eosToken then
+    if next_output == self.eosToken then
       break
     end
 
