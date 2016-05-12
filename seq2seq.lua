@@ -26,8 +26,6 @@ function Seq2Seq:buildModel()
 
   self.encoder:zeroGradParameters()
   self.decoder:zeroGradParameters()
-
-  self.zeroTensor = torch.Tensor(2):zero()
 end
 
 function Seq2Seq:cuda()
@@ -37,8 +35,6 @@ function Seq2Seq:cuda()
   if self.criterion then
     self.criterion:cuda()
   end
-
-  self.zeroTensor = self.zeroTensor:cuda()
 end
 
 function Seq2Seq:cl()
@@ -48,8 +44,6 @@ function Seq2Seq:cl()
   if self.criterion then
     self.criterion:cl()
   end
-
-  self.zeroTensor = self.zeroTensor:cl()
 end
 
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
@@ -74,7 +68,7 @@ function Seq2Seq:train(input, target)
   local decoderTarget = target:sub(2, -1)
 
   -- Forward pass
-  self.encoder:forward(encoderInput)
+  local encoderOutput = self.encoder:forward(encoderInput)
   self:forwardConnect(encoderInput:size(1))
   local decoderOutput = self.decoder:forward(decoderInput)
   local Edecoder = self.criterion:forward(decoderOutput, decoderTarget)
@@ -87,7 +81,7 @@ function Seq2Seq:train(input, target)
   local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
   self.decoder:backward(decoderInput, gEdec)
   self:backwardConnect()
-  self.encoder:backward(encoderInput, self.zeroTensor)
+  self.encoder:backward(encoderInput, encoderOutput:zero())
 
   self.encoder:updateGradParameters(self.momentum)
   self.decoder:updateGradParameters(self.momentum)
