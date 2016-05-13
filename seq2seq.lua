@@ -26,8 +26,6 @@ function Seq2Seq:buildModel()
 
   self.encoder:zeroGradParameters()
   self.decoder:zeroGradParameters()
-
-  self.zeroTensor = torch.Tensor(2):zero()
 end
 
 function Seq2Seq:cuda()
@@ -37,8 +35,6 @@ function Seq2Seq:cuda()
   if self.criterion then
     self.criterion:cuda()
   end
-
-  self.zeroTensor = self.zeroTensor:cuda()
 end
 
 function Seq2Seq:cl()
@@ -48,8 +44,6 @@ function Seq2Seq:cl()
   if self.criterion then
     self.criterion:cl()
   end
-
-  self.zeroTensor = self.zeroTensor:cl()
 end
 
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
@@ -74,7 +68,7 @@ function Seq2Seq:train(input, target)
   local decoderTarget = target:sub(2, -1)
 
   -- Forward pass
-  self.encoder:forward(encoderInput)
+  local encoderOutput = self.encoder:forward(encoderInput)
   self:forwardConnect(encoderInput:size(1))
   local decoderOutput = self.decoder:forward(decoderInput)
   local Edecoder = self.criterion:forward(decoderOutput, decoderTarget)
@@ -87,7 +81,7 @@ function Seq2Seq:train(input, target)
   local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
   self.decoder:backward(decoderInput, gEdec)
   self:backwardConnect()
-  self.encoder:backward(encoderInput, self.zeroTensor)
+  self.encoder:backward(encoderInput, encoderOutput:zero())
 
   self.encoder:updateGradParameters(self.momentum)
   self.decoder:updateGradParameters(self.momentum)
@@ -115,18 +109,19 @@ function Seq2Seq:eval(input)
   local probabilities = {}
 
   -- Forward <go> and all of it's output recursively back to the decoder
-  local output = self.goToken
+  local output = {self.goToken}
   for i = 1, MAX_OUTPUT_SIZE do
-    local prediction = self.decoder:forward(torch.Tensor{output})[1]
+    local prediction = self.decoder:forward(torch.Tensor(output))[#output]
     -- prediction contains the probabilities for each word IDs.
     -- The index of the probability is the word ID.
-    local prob, wordIds = prediction:sort(1, true)
+    local prob, wordIds = prediction:topk(5, 1, true, true)
 
     -- First one is the most likely.
-    output = wordIds[1]
+    next_output = wordIds[1]
+    table.insert(output, next_output)
 
     -- Terminate on EOS token
-    if output == self.eosToken then
+    if next_output == self.eosToken then
       break
     end
 
