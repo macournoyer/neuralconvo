@@ -18,58 +18,55 @@ In this experiment, we train the seq2seq model with movie dialogs from the [Corn
 
 ## Sample conversation
 
-Here's a sample conversation after training for 10 epoch with only 5000 examples, using the following command:
+Here's a sample conversation after training for 20 epoch with 50000 examples, using the following command:
 
 ```sh
-th train.lua --cuda --dataset 5000 --hiddenSize 1000
+th train.lua --cuda --dataset 50000 --hiddenSize 1000
 ```
 
-for opencl, you can use the following command:
+(Took 3 days to train on my GeForce GTX 780M.)
 
-```sh
-th train.lua --opencl --dataset 5000 --hiddenSize 1000
-```
+For OpenCL, use `--opencl` instead of `--cuda`. To train on CPU, don't provide any of those two.
 
-> **me:** Hi  
-> **bot:** Hey.
+> **me:** Hello?
+> **bot:** Hi.
 > 
-> **me:** What's your name?  
-> **bot:** Pris.
+> **me:** How are you?
+> **bot:** I'm fine.
 > 
-> **me:** How old are you?  
-> **bot:** Thirty five eleven.
+> **me:** What's your name?
+> **bot:** It's hard to describe.
 > 
-> **me:** What's 2 + 2?  
-> **bot:** Nothing.
+> **me:** How so?
+> **bot:** I'm not sure.
 > 
-> **me:** That's funny.  
-> **bot:** No.
+> **me:** What color is the sky?
+> **bot:** It's blue.
 > 
-> **me:** Where are you from?  
-> **bot:** Helsinki, there!
+> **me:** What is your job?
+> **bot:** It's not that i'm a fucking werewolf!
 > 
-> **me:** That's a nice place.  
-> **bot:** Yes.
+> **me:** What is the purpose of life?
+> **bot:** A gift.
 > 
-> **me:** How long have you been living in Helsinki?  
-> **bot:** Thirty years.
+> **me:** Are you intelligent?
+> **bot:** Yes, well...
 > 
-> **me:** Talk to you later.  
-> **bot:** What?
+> **me:** Are you a machine?
+> **bot:** That's a lie.
 > 
-> **me:** I'm leaving.  
-> **bot:** Leaving what?
+> **me:** Are you human?
+> **bot:** No, i'm not.
 > 
-> **me:** Leaving this conversation.  
-> **bot:** Yes.
+> **me:** What are you?
+> **bot:** I'm not sure.
+>
+> **me:** Do you plan on taking over the world?
+> **bot:** No, i don't.
+
+Phew! That was close. Good thing I didn't train it on the full dataset. Please experiment responsibly.
 
 _(Disclaimer: nonsensical responses have been removed.)_
-
-The results are fun but far less impressive than in the paper. This is probably because of the extremely small dataset and small network I used.
-
-Sadly, my graphic card doesn't have enough memory to train larger networks.
-
-If you manage to run it on a larger network do let me know!
 
 ## Installing
 
@@ -109,12 +106,11 @@ Use the `--dataset NUMBER` option to control the size of the dataset. Training o
 The model will be saved to `data/model.t7` after each epoch if it has improved (error decreased).
 
 ## Testing
-**still have problem for cltorch**
 
 To load the model and have a conversation:
 
 ```sh
-th -i eval.lua
+th -i eval.lua --cuda # Skip --cuda if you didn't train with it
 # ...
 th> say "Hello."
 ```
