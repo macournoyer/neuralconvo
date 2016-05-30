@@ -72,31 +72,27 @@ for epoch = 1, options.maxEpoch do
   local timer = torch.Timer()
 
   local i = 1
-  for examples in dataset:batches(options.batchSize) do
+  for encInputs, decInputs, decTargets in dataset:batches(options.batchSize) do
     collectgarbage()
 
-    for _, example in ipairs(examples) do
-      local input, target = unpack(example)
-
-      if options.cuda then
-        input = input:cuda()
-        target = target:cuda()
-      elseif options.opencl then
-        input = input:cl()
-        target = target:cl()
-      end
-
-      local err = model:train(input, target)
-
-      -- Check if error is NaN. If so, it's probably a bug.
-      if err ~= err then
-        error("Invalid error! Exiting.")
-      end
-
-      errors[i] = err
-      xlua.progress(i, dataset.examplesCount)
-      i = i + 1
+    if options.cuda then
+      inputs = inputs:cuda()
+      targets = targets:cuda()
+    elseif options.opencl then
+      inputs = inputs:cl()
+      targets = targets:cl()
     end
+
+    local err = model:train(encInputs, decInputs, decTargets)
+
+    -- Check if error is NaN. If so, it's probably a bug.
+    if err ~= err then
+      error("Invalid error! Exiting.")
+    end
+
+    errors[i] = err
+    xlua.progress(i, dataset.examplesCount)
+    i = i + 1
   end
 
   timer:stop()

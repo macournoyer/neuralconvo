@@ -62,26 +62,23 @@ function Seq2Seq:backwardConnect()
     nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
 end
 
-function Seq2Seq:train(input, target)
-  local encoderInput = input
-  local decoderInput = target:sub(1, -2)
-  local decoderTarget = target:sub(2, -1)
+function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
 
   -- Forward pass
-  local encoderOutput = self.encoder:forward(encoderInput)
-  self:forwardConnect(encoderInput:size(1))
-  local decoderOutput = self.decoder:forward(decoderInput)
-  local Edecoder = self.criterion:forward(decoderOutput, decoderTarget)
+  local encoderOutput = self.encoder:forward(encoderInputs)
+  self:forwardConnect(encoderInputs:size(1))
+  local decoderOutput = self.decoder:forward(decoderInputs)
+  local Edecoder = self.criterion:forward(decoderOutput, decoderTargets)
 
   if Edecoder ~= Edecoder then -- Exist early on bad error
     return Edecoder
   end
 
   -- Backward pass
-  local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
-  self.decoder:backward(decoderInput, gEdec)
+  local gEdec = self.criterion:backward(decoderOutput, decoderTargets)
+  self.decoder:backward(decoderInputs, gEdec)
   self:backwardConnect()
-  self.encoder:backward(encoderInput, encoderOutput:zero())
+  self.encoder:backward(encoderInputs, encoderOutput:zero())
 
   self.encoder:updateGradParameters(self.momentum)
   self.decoder:updateGradParameters(self.momentum)
