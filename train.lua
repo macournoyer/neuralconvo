@@ -76,11 +76,13 @@ for epoch = 1, options.maxEpoch do
     collectgarbage()
 
     if options.cuda then
-      inputs = inputs:cuda()
-      targets = targets:cuda()
+      encInputs = encInputs:cuda()
+      decInputs = decInputs:cuda()
+      decTargets = decTargets:cuda()
     elseif options.opencl then
-      inputs = inputs:cl()
-      targets = targets:cl()
+      encInputs = encInputs:cl()
+      decInputs = decInputs:cl()
+      decTargets = decTargets:cl()
     end
 
     local err = model:train(encInputs, decInputs, decTargets)
