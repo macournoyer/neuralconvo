@@ -13,7 +13,7 @@ cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
-cmd:option('--batchSize', 1, 'number of examples to load at once')
+cmd:option('--batchSize', 10, 'number of examples to load at once')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -93,7 +93,7 @@ for epoch = 1, options.maxEpoch do
     end
 
     errors[i] = err
-    xlua.progress(i, dataset.examplesCount)
+    xlua.progress(i * options.batchSize, dataset.examplesCount)
     i = i + 1
   end
 
