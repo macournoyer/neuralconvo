@@ -35,6 +35,15 @@ function Seq2Seq:cuda()
   end
 end
 
+function Seq2Seq:float()
+  self.encoder:float()
+  self.decoder:float()
+
+  if self.criterion then
+    self.criterion:float()
+  end
+end
+
 function Seq2Seq:cl()
   self.encoder:cl()
   self.decoder:cl()
