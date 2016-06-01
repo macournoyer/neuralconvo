@@ -165,31 +165,34 @@ function DataSet:batches(size)
     end
     
     for samplenb = 1, #inputSeqs do
-      for word = 1, inputSeqs[samplenb]:size(1) do
+      for word = 1,inputSeqs[samplenb]:size(1) do
+        eosOffset = maxInputSeqLen - inputSeqs[samplenb]:size(1) -- for left padding
         if size == 1 then
           encoderInputs[word] = inputSeqs[samplenb][word]
         else
-          encoderInputs[word][samplenb] = inputSeqs[samplenb][word]
+          encoderInputs[word+eosOffset][samplenb] = inputSeqs[samplenb][word]
         end
       end
     end
     
     for samplenb = 1, #targetSeqs do
-      for word = 1, targetSeqs[samplenb]:sub(1,-2):size(1) do
+      trimmedEosToken = targetSeqs[samplenb]:sub(1,-2)
+      for word = 1, trimmedEosToken:size(1) do
         if size == 1 then
-          decoderInputs[word] = targetSeqs[samplenb]:sub(1,-2)[word]
+          decoderInputs[word] = trimmedEosToken[word]
         else
-          decoderInputs[word][samplenb] = targetSeqs[samplenb]:sub(1,-2)[word]
+          decoderInputs[word][samplenb] = trimmedEosToken[word]
         end
       end
     end
     
     for samplenb = 1, #targetSeqs do
-      for word = 1, targetSeqs[samplenb]:sub(2,-1):size(1) do
+      trimmedGoToken = targetSeqs[samplenb]:sub(2,-1)
+      for word = 1, trimmedGoToken:size(1) do
         if size == 1 then
-          decoderTargets[word] = targetSeqs[samplenb]:sub(2,-1)[word]
+          decoderTargets[word] = trimmedGoToken[word]
         else
-          decoderTargets[word][samplenb] = targetSeqs[samplenb]:sub(2,-1)[word]
+          decoderTargets[word][samplenb] = trimmedGoToken[word]
         end
       end
     end
