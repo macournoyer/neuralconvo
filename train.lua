@@ -68,7 +68,7 @@ for epoch = 1, options.maxEpoch do
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("")
 
-  local errors = torch.Tensor(dataset.examplesCount):fill(0)
+  local errors = {}
   local timer = torch.Timer()
 
   local i = 1
@@ -92,13 +92,14 @@ for epoch = 1, options.maxEpoch do
       error("Invalid error! Exiting.")
     end
 
-    errors[i] = err
+    table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
     i = i + 1
   end
 
   timer:stop()
-
+  
+  errors = torch.Tensor(errors)
   print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
   print("           LR= " .. model.learningRate)
