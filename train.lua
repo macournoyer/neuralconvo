@@ -76,13 +76,13 @@ local function feval(params)
   encoderInputs, decoderInputs, decoderTargets = nextBatch()
   
   if options.cuda then
-    encInputs = encInputs:cuda()
-    decInputs = decInputs:cuda()
-    decTargets = decTargets:cuda()
+    encoderInputs = encoderInputs:cuda()
+    decoderInputs = decoderInputs:cuda()
+    decoderTargets = decoderTargets:cuda()
   elseif options.opencl then
-    encInputs = encInputs:cl()
-    decInputs = decInputs:cl()
-    decTargets = decTargets:cl()
+    encoderInputs = encoderInputs:cl()
+    decoderInputs = decoderInputs:cl()
+    decoderTargets = decoderTargets:cl()
   end
 
   -- Forward pass
