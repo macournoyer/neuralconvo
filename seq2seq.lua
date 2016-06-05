@@ -4,7 +4,7 @@ local Seq2Seq = torch.class("neuralconvo.Seq2Seq")
 function Seq2Seq:__init(vocabSize, hiddenSize)
   self.vocabSize = assert(vocabSize, "vocabSize required at arg #1")
   self.hiddenSize = assert(hiddenSize, "hiddenSize required at arg #2")
-
+  self.optimState = {}
   self:buildModel()
 end
 
@@ -76,7 +76,7 @@ function Seq2Seq:train_optim(encoderInputs, decoderInputs, decoderTargets)
     :add(self.decoder)
     :getParameters()
     
-  local optimState = {learningRate=0.001}
+  local optimConfig = {learningRate=0.001}
   local loss_save = 0
   
   local function feval(params)
@@ -96,7 +96,7 @@ function Seq2Seq:train_optim(encoderInputs, decoderInputs, decoderTargets)
 
     return loss,gradParams
   end
-  optim.adam(feval, params, optimState)
+  optim.adam(feval, params, optimConfig,optimState)
 
   self.decoder:forget()
   self.encoder:forget()
