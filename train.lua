@@ -64,16 +64,17 @@ end
 
 -- Define optimizer
 
-nextBatch = dataset:batches(options.batchSize)
+local nextBatch = dataset:batches(options.batchSize)
 
 local params, gradParams = model:getParameters()
     
 local optimConfig = {learningRate=options.learningRate}
+local optimState = {}
   
 local function feval(params)
   gradParams:zero()
   
-  encoderInputs, decoderInputs, decoderTargets = nextBatch()
+  local encoderInputs, decoderInputs, decoderTargets = nextBatch()
   
   if options.cuda then
     encoderInputs = encoderInputs:cuda()
@@ -116,7 +117,7 @@ for epoch = 1, options.maxEpoch do
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
     
-    local _,tloss =optim.adam(feval, params, optimConfig, optimState)
+    local _,tloss = optim.adam(feval, params, optimConfig, optimState)
     err = tloss[1] -- optim returns a list
 
     model.decoder:forget()
@@ -130,6 +131,7 @@ for epoch = 1, options.maxEpoch do
     table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
   end
+  nextBatch = dataset:batches(options.batchSize)
 
   timer:stop()
   

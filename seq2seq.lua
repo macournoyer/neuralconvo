@@ -4,7 +4,6 @@ local Seq2Seq = torch.class("neuralconvo.Seq2Seq")
 function Seq2Seq:__init(vocabSize, hiddenSize)
   self.vocabSize = assert(vocabSize, "vocabSize required at arg #1")
   self.hiddenSize = assert(hiddenSize, "hiddenSize required at arg #2")
-  self.optimState = {}
   self:buildModel()
 end
 
@@ -71,41 +70,6 @@ function Seq2Seq:backwardConnect()
     nn.rnn.recursiveCopy(self.encoderLSTM.userNextGradCell, self.decoderLSTM.userGradPrevCell)
   self.encoderLSTM.gradPrevOutput =
     nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
-end
-
-function Seq2Seq:train_optim(encoderInputs, decoderInputs, decoderTargets)
-  
-  local params, gradParams = nn.Container()
-    :add(self.encoder)
-    :add(self.decoder)
-    :getParameters()
-    
-  local optimConfig = {learningRate=0.001}
-  local loss_save = 0
-  
-  local function feval(params)
-    gradParams:zero()
-
-    -- Forward pass
-    local encoderOutput = self.encoder:forward(encoderInputs)
-    self:forwardConnect(encoderInputs:size(1))
-    local decoderOutput = self.decoder:forward(decoderInputs)
-    local loss = self.criterion:forward(decoderOutput, decoderTargets)
-    loss_save = loss
-    
-    local dloss_doutput = self.criterion:backward(decoderOutput, decoderTargets)
-    self.decoder:backward(decoderInputs, dloss_doutput)
-    self:backwardConnect()
-    self.encoder:backward(encoderInputs, encoderOutput:zero())
-
-    return loss,gradParams
-  end
-  optim.adam(feval, params, optimConfig,optimState)
-
-  self.decoder:forget()
-  self.encoder:forget()
-
-  return loss_save
 end
 
 function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
