@@ -1,7 +1,6 @@
 require 'torch'
 require 'nn'
 require 'rnn'
-require 'optim'
 
 neuralconvo = {}
 

@@ -1,5 +1,6 @@
 require 'neuralconvo'
 require 'xlua'
+require 'optim'
 
 cmd = torch.CmdLine()
 cmd:text('Options:')
@@ -8,7 +9,7 @@ cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
-cmd:option('--learningRate', 0.05, 'learning rate at t=0')
+cmd:option('--learningRate', 0.001, 'learning rate at t=0')
 cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
@@ -61,6 +62,45 @@ elseif options.opencl then
   model:cl()
 end
 
+-- Define optimizer
+
+nextBatch = dataset:batches(options.batchSize)
+
+local params, gradParams = model:getParameters()
+    
+local optimConfig = {learningRate=options.learningRate}
+  
+local function feval(params)
+  gradParams:zero()
+  
+  encoderInputs, decoderInputs, decoderTargets = nextBatch()
+  
+  if options.cuda then
+    encInputs = encInputs:cuda()
+    decInputs = decInputs:cuda()
+    decTargets = decTargets:cuda()
+  elseif options.opencl then
+    encInputs = encInputs:cl()
+    decInputs = decInputs:cl()
+    decTargets = decTargets:cl()
+  end
+
+  -- Forward pass
+  local encoderOutput = model.encoder:forward(encoderInputs)
+  model:forwardConnect(encoderInputs:size(1))
+  local decoderOutput = model.decoder:forward(decoderInputs)
+  local loss = model.criterion:forward(decoderOutput, decoderTargets)
+  
+  -- Backward pass
+  local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
+  model.decoder:backward(decoderInputs, dloss_doutput)
+  model:backwardConnect()
+  model.encoder:backward(encoderInputs, encoderOutput:zero())
+
+  return loss,gradParams
+end
+
+
 
 -- Run the experiment
 
@@ -71,21 +111,16 @@ for epoch = 1, options.maxEpoch do
   local errors = {}
   local timer = torch.Timer()
 
-  local i = 1
-  for encInputs, decInputs, decTargets in dataset:batches(options.batchSize) do
+  --local i = 1
+  --for encInputs, decInputs, decTargets in dataset:batches(options.batchSize) do
+  for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
+    
+    local _,tloss =optim.adam(feval, params, optimConfig, optimState)
+    err = tloss[1] -- optim returns a list
 
-    if options.cuda then
-      encInputs = encInputs:cuda()
-      decInputs = decInputs:cuda()
-      decTargets = decTargets:cuda()
-    elseif options.opencl then
-      encInputs = encInputs:cl()
-      decInputs = decInputs:cl()
-      decTargets = decTargets:cl()
-    end
-
-    local err = model:train_optim(encInputs, decInputs, decTargets)
+    model.decoder:forget()
+    model.encoder:forget()
 
     -- Check if error is NaN. If so, it's probably a bug.
     if err ~= err then
@@ -94,7 +129,6 @@ for epoch = 1, options.maxEpoch do
 
     table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
-    i = i + 1
   end
 
   timer:stop()

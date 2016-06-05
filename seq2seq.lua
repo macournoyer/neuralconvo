@@ -53,6 +53,10 @@ function Seq2Seq:cl()
   end
 end
 
+function Seq2Seq:getParameters()
+  return nn.Container():add(self.encoder):add(self.decoder):getParameters()
+end
+
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
 function Seq2Seq:forwardConnect(inputSeqLen)
   self.decoderLSTM.userPrevOutput =
