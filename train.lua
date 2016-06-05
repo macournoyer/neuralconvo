@@ -85,7 +85,7 @@ for epoch = 1, options.maxEpoch do
       decTargets = decTargets:cl()
     end
 
-    local err = model:train(encInputs, decInputs, decTargets)
+    local err = model:train_optim(encInputs, decInputs, decTargets)
 
     -- Check if error is NaN. If so, it's probably a bug.
     if err ~= err then

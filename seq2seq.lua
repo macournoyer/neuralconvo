@@ -69,6 +69,41 @@ function Seq2Seq:backwardConnect()
     nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
 end
 
+function Seq2Seq:train_optim(encoderInputs, decoderInputs, decoderTargets)
+  
+  local params, gradParams = nn.Container()
+    :add(self.encoder)
+    :add(self.decoder)
+    :getParameters()
+    
+  local optimState = {learningRate=0.001}
+  local loss_save = 0
+  
+  local function feval(params)
+    gradParams:zero()
+
+    -- Forward pass
+    local encoderOutput = self.encoder:forward(encoderInputs)
+    self:forwardConnect(encoderInputs:size(1))
+    local decoderOutput = self.decoder:forward(decoderInputs)
+    local loss = self.criterion:forward(decoderOutput, decoderTargets)
+    loss_save = loss
+    
+    local dloss_doutput = self.criterion:backward(decoderOutput, decoderTargets)
+    self.decoder:backward(decoderInputs, dloss_doutput)
+    self:backwardConnect()
+    self.encoder:backward(encoderInputs, encoderOutput:zero())
+
+    return loss,gradParams
+  end
+  optim.adam(feval, params, optimState)
+
+  self.decoder:forget()
+  self.encoder:forget()
+
+  return loss_save
+end
+
 function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
 
   -- Forward pass
@@ -77,9 +112,6 @@ function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
   local decoderOutput = self.decoder:forward(decoderInputs)
   local Edecoder = self.criterion:forward(decoderOutput, decoderTargets)
 
-  if Edecoder ~= Edecoder then -- Exist early on bad error
-    return Edecoder
-  end
 
   -- Backward pass
   local gEdec = self.criterion:backward(decoderOutput, decoderTargets)
