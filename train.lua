@@ -158,8 +158,8 @@ for epoch = 1, options.maxEpoch do
     minMeanError = errors:mean()
   end
 
-  model.learningRate = model.learningRate + decayFactor
-  model.learningRate = math.max(options.minLR, model.learningRate)
+  --model.learningRate = model.learningRate + decayFactor
+  --model.learningRate = math.max(options.minLR, model.learningRate)
 end
 
 -- Load testing script
