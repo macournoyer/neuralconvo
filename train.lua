@@ -10,6 +10,7 @@ cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
 cmd:option('--learningRate', 0.001, 'learning rate at t=0')
+cmd:option('--gradientClipping', 5, 'clip gradients at this value')
 cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
@@ -68,10 +69,13 @@ local nextBatch = dataset:batches(options.batchSize)
 
 local params, gradParams = model:getParameters()
     
-local optimConfig = {learningRate=options.learningRate}
-local optimState = {}
+local optimState = {learningRate=model.learningRate}
   
-local function feval(params)
+local function feval(x)
+  if x ~= params then
+    params:copy(x)
+  end
+  
   gradParams:zero()
   
   local encoderInputs, decoderInputs, decoderTargets = nextBatch()
@@ -92,12 +96,17 @@ local function feval(params)
   local decoderOutput = model.decoder:forward(decoderInputs)
   local loss = model.criterion:forward(decoderOutput, decoderTargets)
   
+  avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
+  loss = loss / avgSeqLen
+  
   -- Backward pass
   local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
   model.decoder:backward(decoderInputs, dloss_doutput)
   model:backwardConnect()
   model.encoder:backward(encoderInputs, encoderOutput:zero())
-
+  
+  gradParams:clamp(-options.gradientClipping, options.gradientClipping)
+  
   return loss,gradParams
 end
 
@@ -112,21 +121,16 @@ for epoch = 1, options.maxEpoch do
   local errors = {}
   local timer = torch.Timer()
 
-  --local i = 1
-  --for encInputs, decInputs, decTargets in dataset:batches(options.batchSize) do
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
     
-    local _,tloss = optim.adam(feval, params, optimConfig, optimState)
+    
+    local _,tloss = optim.adam(feval, params, optimState)
     err = tloss[1] -- optim returns a list
 
+  
     model.decoder:forget()
     model.encoder:forget()
-
-    -- Check if error is NaN. If so, it's probably a bug.
-    if err ~= err then
-      error("Invalid error! Exiting.")
-    end
 
     table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
@@ -144,6 +148,7 @@ for epoch = 1, options.maxEpoch do
   print("       median= " .. errors:median()[1])
   print("         mean= " .. errors:mean())
   print("          std= " .. errors:std())
+  print("          ppl= " .. torch.exp(errors:mean()))
 
   -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
