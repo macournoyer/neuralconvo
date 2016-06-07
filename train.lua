@@ -160,8 +160,10 @@ for epoch = 1, options.maxEpoch do
   -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
     print("\n(Saving model ...)")
+    collectgarbage()
     model:float()
     torch.save("data/model.t7", model) -- model is saved by default as cpu
+    collectgarbage()
     if options.cuda then
       model:cuda()
     elseif options.opencl then
