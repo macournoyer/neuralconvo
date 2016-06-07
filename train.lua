@@ -1,3 +1,4 @@
+--require("mobdebug").start()
 require 'neuralconvo'
 require 'xlua'
 require 'optim'
@@ -47,8 +48,8 @@ if options.batchSize > 1 then
 else
   model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 end
-model.learningRate = options.learningRate
-model.momentum = options.momentum
+
+
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
 local minMeanError = nil
 
@@ -63,58 +64,64 @@ elseif options.opencl then
   model:cl()
 end
 
--- Define optimizer
-
-local nextBatch = dataset:batches(options.batchSize)
-
-local params, gradParams = model:getParameters()
-    
-local optimState = {learningRate=model.learningRate}
-  
-local function feval(x)
-  if x ~= params then
-    params:copy(x)
-  end
-  
-  gradParams:zero()
-  
-  local encoderInputs, decoderInputs, decoderTargets = nextBatch()
-  
-  if options.cuda then
-    encoderInputs = encoderInputs:cuda()
-    decoderInputs = decoderInputs:cuda()
-    decoderTargets = decoderTargets:cuda()
-  elseif options.opencl then
-    encoderInputs = encoderInputs:cl()
-    decoderInputs = decoderInputs:cl()
-    decoderTargets = decoderTargets:cl()
-  end
-
-  -- Forward pass
-  local encoderOutput = model.encoder:forward(encoderInputs)
-  model:forwardConnect(encoderInputs:size(1))
-  local decoderOutput = model.decoder:forward(decoderInputs)
-  local loss = model.criterion:forward(decoderOutput, decoderTargets)
-  
-  avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
-  loss = loss / avgSeqLen
-  
-  -- Backward pass
-  local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
-  model.decoder:backward(decoderInputs, dloss_doutput)
-  model:backwardConnect()
-  model.encoder:backward(encoderInputs, encoderOutput:zero())
-  
-  gradParams:clamp(-options.gradientClipping, options.gradientClipping)
-  
-  return loss,gradParams
-end
-
-
 
 -- Run the experiment
 
 for epoch = 1, options.maxEpoch do
+
+-- Define optimizer
+
+  local nextBatch = dataset:batches(options.batchSize)
+
+  local params, gradParams = model:getParameters()
+      
+  local optimState = {learningRate=options.learningRate,momentum=options.momentum}
+    
+  local function feval(x)
+    if x ~= params then
+      params:copy(x)
+    end
+    
+    gradParams:zero()
+    local encoderInputs, decoderInputs, decoderTargets = nextBatch()
+    
+    if options.cuda then
+      encoderInputs = encoderInputs:cuda()
+      decoderInputs = decoderInputs:cuda()
+      decoderTargets = decoderTargets:cuda()
+    elseif options.opencl then
+      encoderInputs = encoderInputs:cl()
+      decoderInputs = decoderInputs:cl()
+      decoderTargets = decoderTargets:cl()
+    end
+
+    -- Forward pass
+    local encoderOutput = model.encoder:forward(encoderInputs)
+    model:forwardConnect(encoderInputs:size(1))
+    local decoderOutput = model.decoder:forward(decoderInputs)
+    local loss = model.criterion:forward(decoderOutput, decoderTargets)
+    
+    local avgSeqLen = nil
+    if #decoderInputs:size() == 1 then
+      avgSeqLen = decoderInputs:size(1)
+    else
+      avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
+    end
+    loss = loss / avgSeqLen
+    
+    -- Backward pass
+    local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
+    model.decoder:backward(decoderInputs, dloss_doutput)
+    model:backwardConnect()
+    model.encoder:backward(encoderInputs, encoderOutput:zero())
+    
+    gradParams:clamp(-options.gradientClipping, options.gradientClipping)
+    
+    return loss,gradParams
+  end
+
+  -- run epoch
+  
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("")
 
@@ -124,6 +131,7 @@ for epoch = 1, options.maxEpoch do
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
     
+    --local diff,dC,dC_est = optim.checkgrad(feval,params)
     
     local _,tloss = optim.adam(feval, params, optimState)
     err = tloss[1] -- optim returns a list
@@ -135,14 +143,13 @@ for epoch = 1, options.maxEpoch do
     table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
   end
-  nextBatch = dataset:batches(options.batchSize)
 
   timer:stop()
   
   errors = torch.Tensor(errors)
   print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
-  print("           LR= " .. model.learningRate)
+  print("           LR= " .. optimState.learningRate)
   print("  Errors: min= " .. errors:min())
   print("          max= " .. errors:max())
   print("       median= " .. errors:median()[1])
@@ -163,8 +170,8 @@ for epoch = 1, options.maxEpoch do
     minMeanError = errors:mean()
   end
 
-  --model.learningRate = model.learningRate + decayFactor
-  --model.learningRate = math.max(options.minLR, model.learningRate)
+  -- optimState.learningRate = optimState.learningRate + decayFactor
+  -- optimState.learningRate = math.max(options.minLR, optimState.learningRate)
 end
 
 -- Load testing script
