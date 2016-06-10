@@ -10,19 +10,17 @@ end
 
 function Seq2Seq:buildModel()
   self.encoder = nn.Sequential()
-  self.encoder:add(nn.LookupTable(self.vocabSize, self.hiddenSize))
-  self.encoder:add(nn.SplitTable(1, 2))
-  self.encoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize)
+  self.encoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
+  self.encoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
   self.encoder:add(nn.Sequencer(self.encoderLSTM))
-  self.encoder:add(nn.SelectTable(-1))
+  self.encoder:add(nn.Select(1,-1))
 
   self.decoder = nn.Sequential()
-  self.decoder:add(nn.LookupTable(self.vocabSize, self.hiddenSize))
-  self.decoder:add(nn.SplitTable(1, 2))
-  self.decoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize)
+  self.decoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
+  self.decoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
   self.decoder:add(nn.Sequencer(self.decoderLSTM))
-  self.decoder:add(nn.Sequencer(nn.Linear(self.hiddenSize, self.vocabSize)))
-  self.decoder:add(nn.Sequencer(nn.LogSoftMax()))
+  self.decoder:add(nn.Sequencer(nn.MaskZero(nn.Linear(self.hiddenSize, self.vocabSize),1)))
+  self.decoder:add(nn.Sequencer(nn.MaskZero(nn.LogSoftMax(),1)))
 
   self.encoder:zeroGradParameters()
   self.decoder:zeroGradParameters()
@@ -62,26 +60,23 @@ function Seq2Seq:backwardConnect()
     nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
 end
 
-function Seq2Seq:train(input, target)
-  local encoderInput = input
-  local decoderInput = target:sub(1, -2)
-  local decoderTarget = target:sub(2, -1)
+function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
 
   -- Forward pass
-  local encoderOutput = self.encoder:forward(encoderInput)
-  self:forwardConnect(encoderInput:size(1))
-  local decoderOutput = self.decoder:forward(decoderInput)
-  local Edecoder = self.criterion:forward(decoderOutput, decoderTarget)
+  local encoderOutput = self.encoder:forward(encoderInputs)
+  self:forwardConnect(encoderInputs:size(1))
+  local decoderOutput = self.decoder:forward(decoderInputs)
+  local Edecoder = self.criterion:forward(decoderOutput, decoderTargets)
 
   if Edecoder ~= Edecoder then -- Exist early on bad error
     return Edecoder
   end
 
   -- Backward pass
-  local gEdec = self.criterion:backward(decoderOutput, decoderTarget)
-  self.decoder:backward(decoderInput, gEdec)
+  local gEdec = self.criterion:backward(decoderOutput, decoderTargets)
+  self.decoder:backward(decoderInputs, gEdec)
   self:backwardConnect()
-  self.encoder:backward(encoderInput, encoderOutput:zero())
+  self.encoder:backward(encoderInputs, encoderOutput:zero())
 
   self.encoder:updateGradParameters(self.momentum)
   self.decoder:updateGradParameters(self.momentum)

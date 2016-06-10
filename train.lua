@@ -13,7 +13,7 @@ cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
-cmd:option('--batchSize', 1000, 'number of examples to load at once')
+cmd:option('--batchSize', 10, 'number of examples to load at once')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -40,7 +40,11 @@ model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 
 -- Training parameters
-model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
+if options.batchSize > 1 then
+  model.criterion = nn.SequencerCriterion(nn.MaskZeroCriterion(nn.ClassNLLCriterion(),1))
+else
+  model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
+end
 model.learningRate = options.learningRate
 model.momentum = options.momentum
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
@@ -68,31 +72,29 @@ for epoch = 1, options.maxEpoch do
   local timer = torch.Timer()
 
   local i = 1
-  for examples in dataset:batches(options.batchSize) do
+  for encInputs, decInputs, decTargets in dataset:batches(options.batchSize) do
     collectgarbage()
 
-    for _, example in ipairs(examples) do
-      local input, target = unpack(example)
-
-      if options.cuda then
-        input = input:cuda()
-        target = target:cuda()
-      elseif options.opencl then
-        input = input:cl()
-        target = target:cl()
-      end
-
-      local err = model:train(input, target)
-
-      -- Check if error is NaN. If so, it's probably a bug.
-      if err ~= err then
-        error("Invalid error! Exiting.")
-      end
-
-      errors[i] = err
-      xlua.progress(i, dataset.examplesCount)
-      i = i + 1
+    if options.cuda then
+      encInputs = encInputs:cuda()
+      decInputs = decInputs:cuda()
+      decTargets = decTargets:cuda()
+    elseif options.opencl then
+      encInputs = encInputs:cl()
+      decInputs = decInputs:cl()
+      decTargets = decTargets:cl()
     end
+
+    local err = model:train(encInputs, decInputs, decTargets)
+
+    -- Check if error is NaN. If so, it's probably a bug.
+    if err ~= err then
+      error("Invalid error! Exiting.")
+    end
+
+    errors[i] = err
+    xlua.progress(i * options.batchSize, dataset.examplesCount)
+    i = i + 1
   end
 
   timer:stop()
