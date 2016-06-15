@@ -1,28 +1,59 @@
 -- Based on https://github.com/Element-Research/rnn/blob/master/examples/encoder-decoder-coupling.lua
 local Seq2Seq = torch.class("neuralconvo.Seq2Seq")
 
-function Seq2Seq:__init(vocabSize, hiddenSize)
+function Seq2Seq:__init(vocabSize, hiddenSize, numLayers)
   self.vocabSize = assert(vocabSize, "vocabSize required at arg #1")
   self.hiddenSize = assert(hiddenSize, "hiddenSize required at arg #2")
+  self.numLayers = numLayers or 1
   self:buildModel()
 end
 
 function Seq2Seq:buildModel()
   self.encoder = nn.Sequential()
   self.encoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
-  self.encoderLSTM = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
-  self.encoder:add(nn.Sequencer(self.encoderLSTM))
+  
+  self.encLstmLayers = {}
+  for i=1,self.numLayers do
+    self.encLstmLayers[i] = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
+    self.encoder:add(nn.Sequencer(self.encLstmLayers[i]))
+  end
+  
   self.encoder:add(nn.Select(1,-1))
 
   self.decoder = nn.Sequential()
   self.decoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
-  self.decoderLSTM = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
-  self.decoder:add(nn.Sequencer(self.decoderLSTM))
+  
+  self.decLstmLayers = {}
+  for i=1,self.numLayers do
+    self.decLstmLayers[i] = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
+    self.decoder:add(nn.Sequencer(self.decLstmLayers[i]))
+  end
+  
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.Linear(self.hiddenSize, self.vocabSize),1)))
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.LogSoftMax(),1)))
 
   self.encoder:zeroGradParameters()
   self.decoder:zeroGradParameters()
+end
+
+--[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
+function Seq2Seq:forwardConnect(inputSeqLen)
+  for i=1,self.numLayers do
+    self.decLstmLayers[i].userPrevOutput =
+      nn.rnn.recursiveCopy(self.decLstmLayers[i].userPrevOutput, self.encLstmLayers[i].outputs[inputSeqLen])
+    self.decLstmLayers[i].userPrevCell =
+      nn.rnn.recursiveCopy(self.decLstmLayers[i].userPrevCell, self.encLstmLayers[i].cells[inputSeqLen])
+  end
+end
+
+--[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
+function Seq2Seq:backwardConnect()
+  for i=1,self.numLayers do
+    self.encLstmLayers[i].userNextGradCell =
+      nn.rnn.recursiveCopy(self.encLstmLayers[i].userNextGradCell, self.decLstmLayers[i].userGradPrevCell)
+    self.encLstmLayers[i].gradPrevOutput =
+      nn.rnn.recursiveCopy(self.encLstmLayers[i].gradPrevOutput, self.decLstmLayers[i].userGradPrevOutput)
+  end
 end
 
 function Seq2Seq:cuda()
@@ -54,22 +85,6 @@ end
 
 function Seq2Seq:getParameters()
   return nn.Container():add(self.encoder):add(self.decoder):getParameters()
-end
-
---[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
-function Seq2Seq:forwardConnect(inputSeqLen)
-  self.decoderLSTM.userPrevOutput =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevOutput, self.encoderLSTM.outputs[inputSeqLen])
-  self.decoderLSTM.userPrevCell =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevCell, self.encoderLSTM.cells[inputSeqLen])
-end
-
---[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
-function Seq2Seq:backwardConnect()
-  self.encoderLSTM.userNextGradCell =
-    nn.rnn.recursiveCopy(self.encoderLSTM.userNextGradCell, self.decoderLSTM.userGradPrevCell)
-  self.encoderLSTM.gradPrevOutput =
-    nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
 end
 
 function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
