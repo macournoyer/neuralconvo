@@ -9,6 +9,7 @@ cmd:option('--maxVocabSize', 0, 'max number of words in the vocab (0 = no limit)
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
+cmd:option('--numLayers', 1, 'number of LSTM layers')
 cmd:option('--learningRate', 0.001, 'learning rate at t=0')
 cmd:option('--gradientClipping', 5, 'clip gradients at this value')
 cmd:option('--momentum', 0.9, 'momentum')
@@ -37,7 +38,7 @@ print("  Vocabulary size: " .. dataset.wordsCount)
 print("         Examples: " .. dataset.examplesCount)
 
 -- Model
-model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize)
+model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize, options.numLayers)
 model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 
