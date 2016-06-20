@@ -75,6 +75,7 @@ end
 for epoch = 1, options.maxEpoch do
 
 -- Define optimizer
+  collectgarbage()
 
   dataset:shuffleExamples()
   local nextBatch = dataset:batches(options.batchSize)
@@ -165,6 +166,7 @@ for epoch = 1, options.maxEpoch do
   -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
     print("\n(Saving model ...)")
+    params, gradParams = nil,nil
     collectgarbage()
     model:float()
     collectgarbage()
