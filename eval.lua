@@ -13,7 +13,8 @@ if dataset == nil then
   options = cmd:parse(arg)
 
   -- Data
-  dataset = neuralconvo.DataSet()
+  dataset = neuralconvo.DataSet("data/cornell_movie_dialogs/contextResponse.csv")
+  dataset:load(true)
 
   -- Enabled CUDA
   if options.cuda then
