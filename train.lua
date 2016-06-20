@@ -75,8 +75,9 @@ for epoch = 1, options.maxEpoch do
   local nextBatch = dataset:batches(options.batchSize)
   local params, gradParams = model:getParameters()      
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
-    
-  -- Define optimizer
+
+
+-- Define closure for optimizer
   local function feval(x)
     
     gradParams:zero()
