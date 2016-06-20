@@ -67,6 +67,15 @@ function CornellMovieDialogs:load()
   end
 
   xlua.progress(TOTAL_LINES, TOTAL_LINES)
-
-  return conversations
+  
+  print("-- Saving context-response samples ...")
+  
+  contextResponse = {contexts = {},responses = {}}
+  for cnum,conv in ipairs(conversations) do
+    for i = 2, #conv do
+      table.insert(contextResponse.contexts,conv[i-1]['text'])
+      table.insert(contextResponse.responses,conv[i]['text'])
+    end
+  end
+  csvigo.save(self.dir .. "/contextResponse.csv",contextResponse)
 end

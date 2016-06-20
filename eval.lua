@@ -9,8 +9,9 @@ cmd:option('--debug', false, 'show debug info')
 cmd:text()
 options = cmd:parse(arg)
 
--- Data
-dataset = neuralconvo.DataSet()
+
+local dataset = neuralconvo.DataSet("data/cornell_movie_dialogs/contextResponse.csv")
+dataset:load(true)
 
 print("-- Loading model")
 model = torch.load("data/model.t7")

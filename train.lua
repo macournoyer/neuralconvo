@@ -5,7 +5,7 @@ require 'optim'
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
-cmd:option('--maxVocabSize', 0, 'max number of words in the vocab (0 = no limit)')
+cmd:option('--vocabSize', -1, 'size of the vocabulary')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
@@ -27,11 +27,15 @@ end
 
 -- Data
 print("-- Loading dataset")
-dataset = neuralconvo.DataSet(neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"),
+if not path.exists("data/cornell_movie_dialogs/contextResponse.csv") then
+  neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs")
+end
+dataset = neuralconvo.DataSet("data/cornell_movie_dialogs/contextResponse.csv",
                     {
                       loadFirst = options.dataset,
-                      maxVocabSize = options.maxVocabSize
+                      vocabSize = options.vocabSize
                     })
+dataset:load()
 
 print("\nDataset stats:")
 print("  Vocabulary size: " .. dataset.wordsCount)
@@ -67,15 +71,13 @@ end
 for epoch = 1, options.maxEpoch do
   collectgarbage()
 
+  dataset:shuffleExamples()
   local nextBatch = dataset:batches(options.batchSize)
   local params, gradParams = model:getParameters()      
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
     
   -- Define optimizer
   local function feval(x)
-    if x ~= params then
-      params:copy(x)
-    end
     
     gradParams:zero()
     local encoderInputs, decoderInputs, decoderTargets = nextBatch()
@@ -128,6 +130,7 @@ for epoch = 1, options.maxEpoch do
     collectgarbage()
     
     local _,tloss = optim.adam(feval, params, optimState)
+    cutorch.synchronize()
     err = tloss[1] -- optim returns a list
   
     model.decoder:forget()
@@ -136,6 +139,7 @@ for epoch = 1, options.maxEpoch do
     table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
   end
+  cutorch.synchronize()
 
   xlua.progress(dataset.examplesCount, dataset.examplesCount)
   timer:stop()
@@ -158,7 +162,8 @@ for epoch = 1, options.maxEpoch do
     collectgarbage()
     -- Model is saved as CPU
     model:float()
-    torch.save("data/model.t7", model)
+    collectgarbage()
+    torch.save("data/model.t7", model) -- model is saved by default as cpu
     collectgarbage()
     if options.cuda then
       model:cuda()
