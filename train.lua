@@ -29,7 +29,7 @@ end
 -- Data
 print("-- Loading dataset")
 if not path.exists("data/cornell_movie_dialogs/contextResponse.csv") then
-  neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs")
+  neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"):load()
 end
 dataset = neuralconvo.DataSet("data/cornell_movie_dialogs/contextResponse.csv",
                     {
