@@ -14,6 +14,9 @@ local DataSet = torch.class("neuralconvo.DataSet")
 local xlua = require "xlua"
 local tokenizer = require "tokenizer"
 local list = require "pl.List"
+local utils = require "pl.utils"
+local function_arg = utils.function_arg
+
 
 function DataSet:__init(samples_file, options)
   options = options or {}
@@ -64,7 +67,6 @@ function DataSet:load(vocabOnly)
   end
   print "-- Loading samples"
   self:readSamples()
-  self:shuffleExamples()
 end
 
 function DataSet:buildVocab()
@@ -94,7 +96,9 @@ function DataSet:buildVocab()
     end
   end
   
-  for word,freq in tablex.sortv(self.wordFreqs,function(x,y) return x>y end) do
+  local sortedCounts = f_sortv(self.wordFreqs,function(x,y) return x>y end)
+  
+  for word,freq in sortedCounts do
     nWordId = self:addWordToVocab(word)
     if self.vocabSize > 0 and nWordId >= self.vocabSize then
       break
@@ -271,4 +275,23 @@ function DataSet:addWordToVocab(word)
   self.word2id[word] = self.wordsCount
   self.id2word[self.wordsCount] = word
   return self.wordsCount
+end
+
+-- penlight from luarocks is outdated.. below fixed version for sortv
+--- return an iterator to a table sorted by its values
+-- @within Iterating
+-- @tab t the table
+-- @func f an optional comparison function (f(x,y) is true if x < y)
+-- @usage for k,v in tablex.sortv(t) do print(k,v) end
+-- @return an iterator to traverse elements sorted by the values
+function f_sortv(t,f)
+    f = function_arg(2, f or '<')
+    local keys = {}
+    for k in pairs(t) do keys[#keys + 1] = k end
+    table.sort(keys,function(x, y) return f(t[x], t[y]) end)
+    local i = 0
+    return function()
+        i = i + 1
+        return keys[i], t[keys[i]]
+    end
 end
