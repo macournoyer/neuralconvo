@@ -18,6 +18,7 @@ cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'number of examples to load at once')
+cmd:option('--weightDecay', 0.001, 'weightDecay')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -138,7 +139,7 @@ for epoch = 1, options.maxEpoch do
     --local diff,dC,dC_est = optim.checkgrad(feval,params)
     
     local _,tloss = optim.adam(feval, params, optimState)
-    cutorch.synchronize()
+    --cutorch.synchronize()
     err = tloss[1] -- optim returns a list
 
   
