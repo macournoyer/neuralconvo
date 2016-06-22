@@ -41,6 +41,7 @@ function DataSet:load(loader)
   local filename = "data/vocab.t7"
 
   if path.exists(filename) then
+   --if false then
     print("Loading vocabulary from " .. filename .. " ...")
     local data = torch.load(filename)
     self.word2id = data.word2id
@@ -50,6 +51,7 @@ function DataSet:load(loader)
     self.eosToken = data.eosToken
     self.unknownToken = data.unknownToken
     self.examplesCount = data.examplesCount
+    --print(self.word2id)
   else
     print("" .. filename .. " not found")
     self:visit(loader:load())
@@ -81,6 +83,7 @@ function DataSet:visit(conversations)
   local total = self.loadFirst or #conversations * 2
 
   for i, conversation in ipairs(conversations) do
+    --print(i)
     if i > total then break end
     self:visitConversation(conversation)
     xlua.progress(i, total)
@@ -88,12 +91,14 @@ function DataSet:visit(conversations)
 
   -- Revisit from the perspective of 2nd character
   for i, conversation in ipairs(conversations) do
+    --print(i)
     if #conversations + i > total then break end
     self:visitConversation(conversation, 2)
     xlua.progress(#conversations + i, total)
   end
 
   print("-- Removing low frequency words")
+  print("sfsgsdfgdf")
 
   for i, datum in ipairs(self.examples) do
     self:removeLowFreqWords(datum[1])
@@ -223,13 +228,15 @@ end
 function DataSet:visitConversation(lines, start)
   start = start or 1
 
+  --print("conv lines "..#lines)
+
   for i = start, #lines, 2 do
     local input = lines[i]
     local target = lines[i+1]
 
     if target then
-      local inputIds = self:visitText(input.text)
-      local targetIds = self:visitText(target.text, 2)
+      local inputIds = self:visitText(input)
+      local targetIds = self:visitText(target, 2)
 
       if inputIds and targetIds then
         -- Revert inputs
@@ -248,18 +255,31 @@ function DataSet:visitText(text, additionalTokens)
   local words = {}
   additionalTokens = additionalTokens or 0
 
-  if text == "" then
+  if text == "" or text == nil then
+    print "zero text"
     return
   end
 
+  --print(text)
+  local values = stringx.split(text, "/")
+  for i, word in ipairs(values) do
+    --print("spword:"..word)
+    table.insert(words, self:makeWordId(word))
+    if #words >= self.maxExampleLen - additionalTokens then
+      break
+    end
+  end
+
+--[[
   for t, word in tokenizer.tokenize(text) do
+    print(word)
     table.insert(words, self:makeWordId(word))
     -- Only keep the first sentence
     if t == "endpunct" or #words >= self.maxExampleLen - additionalTokens then
       break
     end
   end
-
+]]--
   if #words == 0 then
     return
   end
@@ -268,13 +288,15 @@ function DataSet:visitText(text, additionalTokens)
 end
 
 function DataSet:makeWordId(word)
-  word = word:lower()
-
+  --word = word:lower()
+  --print(word)
   local id = self.word2id[word]
 
   if id then
     self.wordFreq[word] = self.wordFreq[word] + 1
+    --print("more freq > 1")
   else
+    --print("to dict word = "..word)
     self.wordsCount = self.wordsCount + 1
     id = self.wordsCount
     self.id2word[id] = word

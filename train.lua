@@ -63,6 +63,8 @@ end
 
 
 -- Run the experiment
+print("dgk ending")
+--exit()
 
 for epoch = 1, options.maxEpoch do
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)

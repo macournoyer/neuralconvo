@@ -138,3 +138,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+##中文对话
+用https://github.com/dgkae/dgk_lost_conv 作为corpus，
+中文是经过分词的，在制作corpus和eval时，都是需要分词的，
+分词之间用/间隔，修改了cornell_movie_dialogs.lua，来支持中文的这种分词形式，
+lua本身对中文以原始的multibyte的形式存储，所以并没有问题，只是不能使用原来的pl.lexer了（tokenizer）。
+corpus应该存放的位置见cornell_movie_dialogs.lua。

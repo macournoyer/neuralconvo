@@ -27,10 +27,15 @@ local function endpunct(token)
 end
 
 local function unknown(token)
+  print("unknown")
   return yield("unknown", token)
 end
 
 function M.tokenize(text)
+
+  print(text)
+
+      --{ "^[\128-\193]+", word },
   return lexer.scan(text, {
       { "^%s+", space },
       { "^['\"]", quote },

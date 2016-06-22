@@ -37,6 +37,7 @@ function pred2sent(wordIds, i)
 
   for _, wordId in ipairs(wordIds) do
     local word = dataset.id2word[wordId[i]]
+    print(wordId[i]..word)
     table.insert(words, word)
   end
 
@@ -61,13 +62,28 @@ end
 function say(text)
   local wordIds = {}
 
+
+  
+  --print(text)
+  local values = stringx.split(text, " ")
+  for i, word in ipairs(values) do
+    local id = dataset.word2id[word] or dataset.unknownToken
+    print(i.." "..word.." "..id)
+
+    table.insert(wordIds, id)
+
+  end
+
+--[[
   for t, word in tokenizer.tokenize(text) do
     local id = dataset.word2id[word:lower()] or dataset.unknownToken
     table.insert(wordIds, id)
   end
+]]--
 
   local input = torch.Tensor(list.reverse(wordIds))
   local wordIds, probabilities = model:eval(input)
+
 
   print(">> " .. pred2sent(wordIds))
 
