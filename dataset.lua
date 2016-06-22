@@ -30,9 +30,14 @@ function DataSet:__init(samples_file, options)
   self.maxExampleLen = options.maxExampleLen or 25
 
   -- Load only first fews examples (approximately)
-  self.loadFirst = options.loadFirst or 0
+  self.loadFirst = options.dataset or 0
+  
+  -- Train/Dev/Test split
+  self.devSplit = options.valSetSize or 0
+  self.trainSplit = 1 - self.devSplit
 
   self.examples = {}
+  self.devExamples = {}
   self.examplesCount = 0
   self.samples_file = csvigo.load{path=samples_file,mode='large'}
 end
@@ -133,8 +138,8 @@ function DataSet:readSamples()
   self.examplesCount = #self.examples
 end
 
-function DataSet:batches(size)
-  local examplesit = pairs(self.examples)
+function DataSet:batches(dataSource,size)
+  local examplesit = pairs(dataSource)
   local done = false
   local cursor = 0
 
@@ -147,7 +152,7 @@ function DataSet:batches(size)
     local maxInputSeqLen,maxTargetOutputSeqLen = 0,0
 
     for i = 1, size do
-      local _,example = next(self.examples,cursor)
+      local _,example = next(dataSource,cursor)
       cursor = cursor + 1
       if example == nil then
         done = true
@@ -223,8 +228,12 @@ function DataSet:processSample(sampleInput, sampleTarget)
 
       table.insert(targetIds, 1, self.goToken)
       table.insert(targetIds, self.eosToken)
-
-      table.insert(self.examples, { torch.IntTensor(inputIds), torch.IntTensor(targetIds) })
+      
+      if torch.uniform() >= self.devSplit then
+        table.insert(self.examples, { torch.IntTensor(inputIds), torch.IntTensor(targetIds) })
+      else
+        table.insert(self.devExamples, { torch.IntTensor(inputIds), torch.IntTensor(targetIds) })
+      end
     end
   end
 end

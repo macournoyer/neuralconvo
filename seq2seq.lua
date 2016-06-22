@@ -141,3 +141,23 @@ function Seq2Seq:eval(input)
 
   return predictions, probabilities
 end
+
+function Seq2Seq:evalLoss(encoderInputs, decoderInputs, decoderTargets)
+  -- Forward pass
+  local encoderOutput = self.encoder:forward(encoderInputs)
+  self:forwardConnect(encoderInputs:size(1))
+  local decoderOutput = self.decoder:forward(decoderInputs)
+  local loss = self.criterion:forward(decoderOutput, decoderTargets)
+  
+  local avgSeqLen = nil
+  if #decoderInputs:size() == 1 then
+    avgSeqLen = decoderInputs:size(1)
+  else
+    avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
+  end
+  loss = loss / avgSeqLen
+  
+  self.decoder:forget()
+  self.encoder:forget()
+  return loss
+end

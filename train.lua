@@ -5,6 +5,7 @@ require 'optim'
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
+cmd:option('--valSetSize', 0.05, 'percentage of validation data')
 cmd:option('--vocabSize', -1, 'size of the vocabulary')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
@@ -31,11 +32,7 @@ print("-- Loading dataset")
 if not path.exists("data/cornell_movie_dialogs/contextResponse.csv") then
   neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"):load()
 end
-dataset = neuralconvo.DataSet("data/cornell_movie_dialogs/contextResponse.csv",
-                    {
-                      loadFirst = options.dataset,
-                      vocabSize = options.vocabSize
-                    })
+dataset = neuralconvo.DataSet("data/cornell_movie_dialogs/contextResponse.csv",options)
 dataset:load()
 
 print("\nDataset stats:")
@@ -68,13 +65,42 @@ elseif options.opencl then
   model:cl()
 end
 
+
+-- validation function
+function eval_val(vmodel,val_data)
+  print "\n-- Eval on validation.. "
+  local nextBatch = dataset:batches(val_data,options.batchSize)
+  local batches_loss = {}
+  for i=1, (#val_data)/options.batchSize+1 do
+    local encoderInputs, decoderInputs, decoderTargets = nextBatch()
+    
+    if options.cuda then
+      encoderInputs = encoderInputs:cuda()
+      decoderInputs = decoderInputs:cuda()
+      decoderTargets = decoderTargets:cuda()
+    elseif options.opencl then
+      encoderInputs = encoderInputs:cl()
+      decoderInputs = decoderInputs:cl()
+      decoderTargets = decoderTargets:cl()
+    end
+    
+    local lloss = vmodel:evalLoss(encoderInputs, decoderInputs, decoderTargets)
+    table.insert(batches_loss,lloss)
+    xlua.progress(i*options.batchSize,#val_data)
+  end
+  return torch.Tensor(batches_loss):mean()
+end
+
 -- Run the experiment
 for epoch = 1, options.maxEpoch do
   collectgarbage()
 
   dataset:shuffleExamples()
-  local nextBatch = dataset:batches(options.batchSize)
-  local params, gradParams = model:getParameters()      
+
+  local nextBatch = dataset:batches(dataset.examples,options.batchSize)
+
+  local params, gradParams = model:getParameters()
+      
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
 
 
@@ -146,6 +172,8 @@ for epoch = 1, options.maxEpoch do
   xlua.progress(dataset.examplesCount, dataset.examplesCount)
   timer:stop()
   
+  local val_loss = eval_val(model,dataset.devExamples)
+  
   errors = torch.Tensor(errors)
   print("\n\nFinished in " .. xlua.formatTime(timer:time().real) ..
     " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
@@ -156,9 +184,13 @@ for epoch = 1, options.maxEpoch do
   print("         mean= " .. errors:mean())
   print("          std= " .. errors:std())
   print("          ppl= " .. torch.exp(errors:mean()))
+  print("     val loss= " .. val_loss)
+  print("      val ppl= " .. torch.exp(val_loss))
+
+
 
   -- Save the model if it improved.
-  if minMeanError == nil or errors:mean() < minMeanError then
+  if minMeanError == nil or val_loss < minMeanError then
     print("\n(Saving model ...)")
     params, gradParams = nil,nil
     collectgarbage()
@@ -172,8 +204,7 @@ for epoch = 1, options.maxEpoch do
     elseif options.opencl then
       model:cl()
     end
-    collectgarbage()
-    minMeanError = errors:mean()
+    minMeanError = val_loss
   end
 
   optimState.learningRate = optimState.learningRate + decayFactor
