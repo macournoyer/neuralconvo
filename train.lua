@@ -75,6 +75,7 @@ function eval_val(vmodel,val_data)
   local batches_loss = {}
   for i=1, (#val_data)/options.batchSize+1 do
     local encoderInputs, decoderInputs, decoderTargets = nextBatch()
+    if encoderInputs == nil then break end
     
     if options.cuda then
       encoderInputs = encoderInputs:cuda()

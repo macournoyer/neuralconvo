@@ -96,7 +96,7 @@ function DataSet:buildVocab()
   for i=2, nb_samples do
     self:countWords(self.samples_file[i][1])
     self:countWords(self.samples_file[i][2])
-    if i % 10000 == 0 then
+    if i % 1000 == 0 then
       xlua.progress(i,nb_samples)
     end
   end
@@ -135,7 +135,7 @@ function DataSet:readSamples()
   
   for i=2, nb_samples do
     self:processSample(self.samples_file[i][contexts_idx],self.samples_file[i][responses_idx])
-    if i % 10000 == 0 then
+    if i % 1000 == 0 then
       xlua.progress(i,nb_samples)
     end
   end
@@ -144,9 +144,8 @@ function DataSet:readSamples()
 end
 
 function DataSet:batches(dataSource,size)
-  local examplesit = pairs(dataSource)
   local done = false
-  local cursor = 0
+  local cursor = 1
 
   return function()
     if done then
@@ -157,11 +156,11 @@ function DataSet:batches(dataSource,size)
     local maxInputSeqLen,maxTargetOutputSeqLen = 0,0
 
     for i = 1, size do
-      local _,example = next(dataSource,cursor)
+      local example = dataSource[cursor]
       cursor = cursor + 1
       if example == nil then
         done = true
-        break
+        return
       end
       inputSeq,targetSeq = unpack(example)
       if inputSeq:size(1) > maxInputSeqLen then
