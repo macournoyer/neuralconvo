@@ -128,8 +128,13 @@ function DataSet:readSamples()
     nb_samples = self.loadFirst
   end
   
+  local responses_idx,contexts_idx = 1,2
+  if self.samples_file[1][2] == 'responses' then
+    responses_idx,contexts_idx = 2,1
+  end
+  
   for i=2, nb_samples do
-    self:processSample(self.samples_file[i][2],self.samples_file[i][1])
+    self:processSample(self.samples_file[i][contexts_idx],self.samples_file[i][responses_idx])
     if i % 10000 == 0 then
       xlua.progress(i,nb_samples)
     end
