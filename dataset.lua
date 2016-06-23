@@ -160,7 +160,7 @@ function DataSet:batches(dataSource,size)
       cursor = cursor + 1
       if example == nil then
         done = true
-        return
+        break
       end
       inputSeq,targetSeq = unpack(example)
       if inputSeq:size(1) > maxInputSeqLen then
