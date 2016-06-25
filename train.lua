@@ -70,6 +70,7 @@ end
 for epoch = 1, options.maxEpoch do
 
 -- Define optimizer
+  collectgarbage()
 
   local nextBatch = dataset:batches(options.batchSize)
 
@@ -160,6 +161,7 @@ for epoch = 1, options.maxEpoch do
   -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
     print("\n(Saving model ...)")
+    params, gradParams = nil,nil
     collectgarbage()
     model:float()
     torch.save("data/model.t7", model) -- model is saved by default as cpu
@@ -169,6 +171,7 @@ for epoch = 1, options.maxEpoch do
     elseif options.opencl then
       model:cl()
     end
+    collectgarbage()
     minMeanError = errors:mean()
   end
 
