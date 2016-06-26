@@ -19,7 +19,8 @@ cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'number of examples to load at once')
-cmd:option('--weightDecay', 0.001, 'weightDecay')
+cmd:option('--weightDecay', 0.001, 'Weight decay aka L2 regularization')
+cmd:option('--dropout', 0.5, 'dropout regularization (0=none)')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -41,7 +42,7 @@ print("  Vocabulary size: " .. dataset.wordsCount)
 print("         Examples: " .. dataset.examplesCount)
 
 -- Model
-model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize, options.numLayers)
+model = neuralconvo.Seq2Seq(dataset.wordsCount, options.hiddenSize, options.numLayers,options)
 model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 
@@ -153,7 +154,7 @@ for epoch = 1, options.maxEpoch do
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("")
 
-  local errors = {}
+  local errors,gradNorms = {},{}
   local timer = torch.Timer()
 
   for i=1, dataset.examplesCount/options.batchSize do
@@ -170,6 +171,7 @@ for epoch = 1, options.maxEpoch do
     model.encoder:forget()
 
     table.insert(errors,err)
+    table.insert(gradNorms,gradParams:norm())
     xlua.progress(i * options.batchSize, dataset.examplesCount)
   end
   cutorch.synchronize()
@@ -190,6 +192,7 @@ for epoch = 1, options.maxEpoch do
   print("          ppl= " .. torch.exp(errors:mean()))
   print("     val loss= " .. val_loss)
   print("      val ppl= " .. torch.exp(val_loss))
+  print(" gradNorm avg= " .. torch.Tensor(gradNorms):mean())
 
 
 
