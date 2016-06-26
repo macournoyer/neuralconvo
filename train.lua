@@ -108,6 +108,8 @@ for epoch = 1, options.maxEpoch do
   local params, gradParams = model:getParameters()
       
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
+  
+  model:training() -- set flag for dropout
     
   local function feval(x)
     
