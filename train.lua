@@ -105,8 +105,9 @@ for epoch = 1, options.maxEpoch do
       
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
 
-
--- Define closure for optimizer
+-- Define closure for optimizer  
+  model:training() -- set flag for dropout
+    
   local function feval(x)
     
     gradParams:zero()

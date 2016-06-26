@@ -60,6 +60,16 @@ function Seq2Seq:backwardConnect()
   end
 end
 
+function Seq2Seq:training()
+  self.encoder:training()
+  self.decoder:training()
+end
+
+function Seq2Seq:evaluate()
+  self.encoder:evaluate()
+  self.decoder:evaluate()
+end
+
 function Seq2Seq:cuda()
   self.encoder:cuda()
   self.decoder:cuda()
@@ -110,6 +120,7 @@ end
 local MAX_OUTPUT_SIZE = 20
 
 function Seq2Seq:eval(input)
+  self:evaluate()
   assert(self.goToken, "No goToken specified")
   assert(self.eosToken, "No eosToken specified")
 
@@ -147,6 +158,7 @@ function Seq2Seq:eval(input)
 end
 
 function Seq2Seq:evalLoss(encoderInputs, decoderInputs, decoderTargets)
+  self:evaluate()
   -- Forward pass
   local encoderOutput = self.encoder:forward(encoderInputs)
   self:forwardConnect(encoderInputs:size(1))
