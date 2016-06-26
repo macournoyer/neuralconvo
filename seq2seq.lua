@@ -1,10 +1,12 @@
 -- Based on https://github.com/Element-Research/rnn/blob/master/examples/encoder-decoder-coupling.lua
 local Seq2Seq = torch.class("neuralconvo.Seq2Seq")
 
-function Seq2Seq:__init(vocabSize, hiddenSize, numLayers)
+function Seq2Seq:__init(vocabSize, hiddenSize, numLayers, options)
   self.vocabSize = assert(vocabSize, "vocabSize required at arg #1")
   self.hiddenSize = assert(hiddenSize, "hiddenSize required at arg #2")
+  local optOptions = options or {}
   self.numLayers = numLayers or 1
+  self.dropout = optOptions.dropout or 0
   self:buildModel()
 end
 
@@ -16,6 +18,7 @@ function Seq2Seq:buildModel()
   for i=1,self.numLayers do
     self.encLstmLayers[i] = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
     self.encoder:add(nn.Sequencer(self.encLstmLayers[i]))
+    self.encoder:add(nn.Dropout(self.dropout))
   end
   
   self.encoder:add(nn.Select(1,-1))
@@ -27,6 +30,7 @@ function Seq2Seq:buildModel()
   for i=1,self.numLayers do
     self.decLstmLayers[i] = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
     self.decoder:add(nn.Sequencer(self.decLstmLayers[i]))
+    self.decoder:add(nn.Dropout(self.dropout))
   end
   
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.Linear(self.hiddenSize, self.vocabSize),1)))
