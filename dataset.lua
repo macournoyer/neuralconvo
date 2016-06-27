@@ -174,15 +174,9 @@ function DataSet:batches(dataSource,size)
     end
     
     local encoderInputs,decoderInputs,decoderTargets = nil,nil,nil
-    if size == 1 then
-      encoderInputs = torch.IntTensor(maxInputSeqLen):fill(0)
-      decoderInputs = torch.IntTensor(maxTargetOutputSeqLen-1):fill(0)
-      decoderTargets = torch.IntTensor(maxTargetOutputSeqLen-1):fill(0)
-    else
-      encoderInputs = torch.IntTensor(maxInputSeqLen,size):fill(0)
-      decoderInputs = torch.IntTensor(maxTargetOutputSeqLen-1,size):fill(0)
-      decoderTargets = torch.IntTensor(maxTargetOutputSeqLen-1,size):fill(0)
-    end
+    encoderInputs = torch.IntTensor(maxInputSeqLen,size):fill(0)
+    decoderInputs = torch.IntTensor(maxTargetOutputSeqLen-1,size):fill(0)
+    decoderTargets = torch.IntTensor(maxTargetOutputSeqLen-1,size):fill(0)
     
     for samplenb = 1, #inputSeqs do
       for word = 1,inputSeqs[samplenb]:size(1) do
