@@ -66,10 +66,10 @@ end
 -- validation function
 function eval_val(vmodel,val_data)
   print "\n-- Eval on validation.. "
-  local nextBatch = dataset:batches(val_data,1)
+  local nextBatch = dataset:batches(val_data,options.batchSize)
   local batches_loss = {}
   
-  for i=1, #val_data do
+  for i=1, (#val_data)/options.batchSize+1 do
     local encoderInputs, decoderInputs, decoderTargets = nextBatch()
     if encoderInputs == nil then break end
     
@@ -85,7 +85,7 @@ function eval_val(vmodel,val_data)
     
     local lloss = vmodel:evalLoss(encoderInputs, decoderInputs, decoderTargets)
     table.insert(batches_loss,lloss)
-    xlua.progress(i,#val_data)
+    xlua.progress(i*options.batchSize,#val_data)
   end
   return torch.Tensor(batches_loss):mean()
 end
