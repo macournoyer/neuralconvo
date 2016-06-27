@@ -102,6 +102,14 @@ function DataSet:visit(conversations)
   end
 
   self.wordFreq = nil
+  
+  print("-- Shuffling ")
+  newIdxs = torch.randperm(#self.examples)
+  local sExamples = {}
+  for i, sample in ipairs(self.examples) do
+    sExamples[i] = self.examples[newIdxs[i]]
+  end
+  self.examples = sExamples
 
   self.examplesCount = #self.examples
   self:writeExamplesToFile()

@@ -1,5 +1,7 @@
+--require("mobdebug").start()
 require 'neuralconvo'
 require 'xlua'
+require 'optim'
 
 cmd = torch.CmdLine()
 cmd:text('Options:')
@@ -8,7 +10,8 @@ cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
-cmd:option('--learningRate', 0.05, 'learning rate at t=0')
+cmd:option('--learningRate', 0.001, 'learning rate at t=0')
+cmd:option('--gradientClipping', 5, 'clip gradients at this value')
 cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
@@ -45,8 +48,8 @@ if options.batchSize > 1 then
 else
   model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 end
-model.learningRate = options.learningRate
-model.momentum = options.momentum
+
+
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
 local minMeanError = nil
 
@@ -65,58 +68,115 @@ end
 -- Run the experiment
 
 for epoch = 1, options.maxEpoch do
+
+-- Define optimizer
+  collectgarbage()
+
+  local nextBatch = dataset:batches(options.batchSize)
+
+  local params, gradParams = model:getParameters()
+      
+  local optimState = {learningRate=options.learningRate,momentum=options.momentum}
+    
+  local function feval(x)
+    if x ~= params then
+      params:copy(x)
+    end
+    
+    gradParams:zero()
+    local encoderInputs, decoderInputs, decoderTargets = nextBatch()
+    
+    if options.cuda then
+      encoderInputs = encoderInputs:cuda()
+      decoderInputs = decoderInputs:cuda()
+      decoderTargets = decoderTargets:cuda()
+    elseif options.opencl then
+      encoderInputs = encoderInputs:cl()
+      decoderInputs = decoderInputs:cl()
+      decoderTargets = decoderTargets:cl()
+    end
+
+    -- Forward pass
+    local encoderOutput = model.encoder:forward(encoderInputs)
+    model:forwardConnect(encoderInputs:size(1))
+    local decoderOutput = model.decoder:forward(decoderInputs)
+    local loss = model.criterion:forward(decoderOutput, decoderTargets)
+    
+    local avgSeqLen = nil
+    if #decoderInputs:size() == 1 then
+      avgSeqLen = decoderInputs:size(1)
+    else
+      avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
+    end
+    loss = loss / avgSeqLen
+    
+    -- Backward pass
+    local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
+    model.decoder:backward(decoderInputs, dloss_doutput)
+    model:backwardConnect()
+    model.encoder:backward(encoderInputs, encoderOutput:zero())
+    
+    gradParams:clamp(-options.gradientClipping, options.gradientClipping)
+    
+    return loss,gradParams
+  end
+
+  -- run epoch
+  
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
   print("")
 
-  local errors = torch.Tensor(dataset.examplesCount):fill(0)
+  local errors = {}
   local timer = torch.Timer()
 
-  local i = 1
-  for encInputs, decInputs, decTargets in dataset:batches(options.batchSize) do
+  for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
+    
+    --local diff,dC,dC_est = optim.checkgrad(feval,params)
+    
+    local _,tloss = optim.adam(feval, params, optimState)
+    err = tloss[1] -- optim returns a list
 
-    if options.cuda then
-      encInputs = encInputs:cuda()
-      decInputs = decInputs:cuda()
-      decTargets = decTargets:cuda()
-    elseif options.opencl then
-      encInputs = encInputs:cl()
-      decInputs = decInputs:cl()
-      decTargets = decTargets:cl()
-    end
+  
+    model.decoder:forget()
+    model.encoder:forget()
 
-    local err = model:train(encInputs, decInputs, decTargets)
-
-    -- Check if error is NaN. If so, it's probably a bug.
-    if err ~= err then
-      error("Invalid error! Exiting.")
-    end
-
-    errors[i] = err
+    table.insert(errors,err)
     xlua.progress(i * options.batchSize, dataset.examplesCount)
-    i = i + 1
   end
 
   timer:stop()
-
+  
+  errors = torch.Tensor(errors)
   print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
-  print("           LR= " .. model.learningRate)
+  print("           LR= " .. optimState.learningRate)
   print("  Errors: min= " .. errors:min())
   print("          max= " .. errors:max())
   print("       median= " .. errors:median()[1])
   print("         mean= " .. errors:mean())
   print("          std= " .. errors:std())
+  print("          ppl= " .. torch.exp(errors:mean()))
 
   -- Save the model if it improved.
   if minMeanError == nil or errors:mean() < minMeanError then
     print("\n(Saving model ...)")
-    torch.save("data/model.t7", model)
+    params, gradParams = nil,nil
+    collectgarbage()
+    model:float()
+    torch.save("data/model.t7", model) -- model is saved by default as cpu
+    collectgarbage()
+    if options.cuda then
+      model:cuda()
+    elseif options.opencl then
+      model:cl()
+    end
+    collectgarbage()
     minMeanError = errors:mean()
   end
 
-  model.learningRate = model.learningRate + decayFactor
-  model.learningRate = math.max(options.minLR, model.learningRate)
+  -- optimState.learningRate = optimState.learningRate + decayFactor
+  -- optimState.learningRate = math.max(options.minLR, optimState.learningRate)
 end
 
 -- Load testing script

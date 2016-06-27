@@ -4,20 +4,19 @@ local Seq2Seq = torch.class("neuralconvo.Seq2Seq")
 function Seq2Seq:__init(vocabSize, hiddenSize)
   self.vocabSize = assert(vocabSize, "vocabSize required at arg #1")
   self.hiddenSize = assert(hiddenSize, "hiddenSize required at arg #2")
-
   self:buildModel()
 end
 
 function Seq2Seq:buildModel()
   self.encoder = nn.Sequential()
   self.encoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
-  self.encoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
+  self.encoderLSTM = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
   self.encoder:add(nn.Sequencer(self.encoderLSTM))
   self.encoder:add(nn.Select(1,-1))
 
   self.decoder = nn.Sequential()
   self.decoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
-  self.decoderLSTM = nn.LSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
+  self.decoderLSTM = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
   self.decoder:add(nn.Sequencer(self.decoderLSTM))
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.Linear(self.hiddenSize, self.vocabSize),1)))
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.LogSoftMax(),1)))
@@ -35,6 +34,15 @@ function Seq2Seq:cuda()
   end
 end
 
+function Seq2Seq:float()
+  self.encoder:float()
+  self.decoder:float()
+
+  if self.criterion then
+    self.criterion:float()
+  end
+end
+
 function Seq2Seq:cl()
   self.encoder:cl()
   self.decoder:cl()
@@ -42,6 +50,10 @@ function Seq2Seq:cl()
   if self.criterion then
     self.criterion:cl()
   end
+end
+
+function Seq2Seq:getParameters()
+  return nn.Container():add(self.encoder):add(self.decoder):getParameters()
 end
 
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
@@ -68,9 +80,6 @@ function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
   local decoderOutput = self.decoder:forward(decoderInputs)
   local Edecoder = self.criterion:forward(decoderOutput, decoderTargets)
 
-  if Edecoder ~= Edecoder then -- Exist early on bad error
-    return Edecoder
-  end
 
   -- Backward pass
   local gEdec = self.criterion:backward(decoderOutput, decoderTargets)

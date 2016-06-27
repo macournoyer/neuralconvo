@@ -30,6 +30,13 @@ if model == nil then
   model = torch.load("data/model.t7")
 end
 
+-- Enable CUDA/CL (model on disk is CPU by default)
+if options.cuda then
+  model:cuda()
+elseif options.opencl then
+  model:cl()
+end
+
 -- Word IDs to sentence
 function pred2sent(wordIds, i)
   local words = {}
