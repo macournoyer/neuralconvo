@@ -165,13 +165,7 @@ function Seq2Seq:evalLoss(encoderInputs, decoderInputs, decoderTargets)
   local decoderOutput = self.decoder:forward(decoderInputs)
   local loss = self.criterion:forward(decoderOutput, decoderTargets)
   
-  local avgSeqLen = nil
-  if #decoderInputs:size() == 1 then
-    avgSeqLen = decoderInputs:size(1)
-  else
-    avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
-  end
-  loss = loss / avgSeqLen
+  loss = loss / torch.sign(decoderInputs):sum()
   
   self.decoder:forget()
   self.encoder:forget()
