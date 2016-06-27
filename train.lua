@@ -47,7 +47,7 @@ model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 
 -- Training parameters
-model.criterion = nn.SequencerCriterion(nn.MaskZeroCriterion(nn.ClassNLLCriterion(),1))
+model.criterion = nn.SequencerCriterion(nn.MaskZeroCriterion(nn.ClassNLLCriterion(nil,false),1))
 
 
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
@@ -129,13 +129,7 @@ for epoch = 1, options.maxEpoch do
     local decoderOutput = model.decoder:forward(decoderInputs)
     local loss = model.criterion:forward(decoderOutput, decoderTargets)
     
-    local avgSeqLen = nil
-    if #decoderInputs:size() == 1 then
-      avgSeqLen = decoderInputs:size(1)
-    else
-      avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
-    end
-    loss = loss / avgSeqLen
+    loss = loss / torch.sign(decoderInputs):sum()
     
     -- Backward pass
     local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
