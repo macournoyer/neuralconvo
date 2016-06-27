@@ -46,11 +46,7 @@ model.goToken = dataset.goToken
 model.eosToken = dataset.eosToken
 
 -- Training parameters
-if options.batchSize > 1 then
-  model.criterion = nn.SequencerCriterion(nn.MaskZeroCriterion(nn.ClassNLLCriterion(),1))
-else
-  model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
-end
+model.criterion = nn.SequencerCriterion(nn.MaskZeroCriterion(nn.ClassNLLCriterion(),1))
 
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
 local minMeanError = nil
@@ -73,13 +69,6 @@ function eval_val(vmodel,val_data)
   local nextBatch = dataset:batches(val_data,1)
   local batches_loss = {}
   
-  local criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
-  if options.cuda then
-    criterion:cuda()
-  elseif options.opencl then
-    criterion:cl()
-  end
-  
   for i=1, #val_data do
     local encoderInputs, decoderInputs, decoderTargets = nextBatch()
     if encoderInputs == nil then break end
@@ -94,7 +83,7 @@ function eval_val(vmodel,val_data)
       decoderTargets = decoderTargets:cl()
     end
     
-    local lloss = vmodel:evalLoss(encoderInputs, decoderInputs, decoderTargets,criterion)
+    local lloss = vmodel:evalLoss(encoderInputs, decoderInputs, decoderTargets)
     table.insert(batches_loss,lloss)
     xlua.progress(i,#val_data)
   end

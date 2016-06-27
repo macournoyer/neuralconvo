@@ -157,14 +157,13 @@ function Seq2Seq:eval(input)
   return predictions, probabilities
 end
 
-function Seq2Seq:evalLoss(encoderInputs, decoderInputs, decoderTargets, criterion)
+function Seq2Seq:evalLoss(encoderInputs, decoderInputs, decoderTargets)
   self:evaluate()
-  criterion = criterion or self.criterion
   -- Forward pass
   local encoderOutput = self.encoder:forward(encoderInputs)
   self:forwardConnect(encoderInputs:size(1))
   local decoderOutput = self.decoder:forward(decoderInputs)
-  local loss = criterion:forward(decoderOutput, decoderTargets)
+  local loss = self.criterion:forward(decoderOutput, decoderTargets)
   
   local avgSeqLen = nil
   if #decoderInputs:size() == 1 then
