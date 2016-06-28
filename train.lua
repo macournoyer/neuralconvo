@@ -7,6 +7,7 @@ cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
 cmd:option('--valSetSize', 0.05, 'percentage of validation data')
+cmd:option('--earlyStopOnTrain', false, 'early stop based training loss (default=val loss)')
 cmd:option('--vocabSize', -1, 'size of the vocabulary')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
@@ -172,25 +173,29 @@ for epoch = 1, options.maxEpoch do
   timer:stop()
   
   local val_loss = eval_val(model,dataset.devExamples)
-  
   errors = torch.Tensor(errors)
+  local train_loss = errors:mean()
+  
   print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
   print("           LR= " .. optimState.learningRate)
   print("  Errors: min= " .. errors:min())
   print("          max= " .. errors:max())
   print("       median= " .. errors:median()[1])
-  print("         mean= " .. errors:mean())
+  print("         mean= " .. train_loss)
   print("          std= " .. errors:std())
-  print("          ppl= " .. torch.exp(errors:mean()))
+  print("          ppl= " .. torch.exp(train_loss))
   print("     val loss= " .. val_loss)
   print("      val ppl= " .. torch.exp(val_loss))
-  print(" gradNorm avg= " .. torch.Tensor(gradNorms):mean())
-
-
-
+  --print(" gradNorm avg= " .. torch.Tensor(gradNorms):mean())
+  
+  local earlyStopLoss = val_loss
+  if options.earlyStopOnTrain then
+    earlyStopLoss = train_loss
+  end
+  
   -- Save the model if it improved.
-  if minMeanError == nil or val_loss < minMeanError then
+  if minMeanError == nil or earlyStopLoss < minMeanError then
     print("\n(Saving model ...)")
     params, gradParams = nil,nil
     collectgarbage()
@@ -203,7 +208,7 @@ for epoch = 1, options.maxEpoch do
     elseif options.opencl then
       model:cl()
     end
-    minMeanError = val_loss
+    minMeanError = earlyStopLoss
   end
 
   -- optimState.learningRate = optimState.learningRate + decayFactor
