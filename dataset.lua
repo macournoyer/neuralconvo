@@ -20,8 +20,8 @@ function DataSet:__init(loader, options)
 
   self.examplesFilename = "data/examples.t7"
 
-  -- Discard words with lower frequency then this
-  self.minWordFreq = options.minWordFreq or 1
+  -- Reject words once vocab size reaches this threshold
+  self.maxVocabSize = options.maxVocabSize or 0
 
   -- Maximum number of words in an example sentence
   self.maxExampleLen = options.maxExampleLen or 25
@@ -67,8 +67,6 @@ function DataSet:load(loader)
 end
 
 function DataSet:visit(conversations)
-  -- Table for keeping track of word frequency
-  self.wordFreq = {}
   self.examples = {}
 
   -- Add magic tokens
@@ -92,16 +90,6 @@ function DataSet:visit(conversations)
     self:visitConversation(conversation, 2)
     xlua.progress(#conversations + i, total)
   end
-
-  print("-- Removing low frequency words")
-
-  for i, datum in ipairs(self.examples) do
-    self:removeLowFreqWords(datum[1])
-    self:removeLowFreqWords(datum[2])
-    xlua.progress(i, #self.examples)
-  end
-
-  self.wordFreq = nil
   
   print("-- Shuffling ")
   newIdxs = torch.randperm(#self.examples)
@@ -209,25 +197,6 @@ function DataSet:batches(size)
   end
 end
 
-function DataSet:removeLowFreqWords(input)
-  for i = 1, input:size(1) do
-    local id = input[i]
-    local word = self.id2word[id]
-
-    if word == nil then
-      -- Already removed
-      input[i] = self.unknownToken
-
-    elseif self.wordFreq[word] < self.minWordFreq then
-      input[i] = self.unknownToken
-      
-      self.word2id[word] = nil
-      self.id2word[id] = nil
-      self.wordsCount = self.wordsCount - 1
-    end
-  end
-end
-
 function DataSet:visitConversation(lines, start)
   start = start or 1
 
@@ -276,18 +245,20 @@ function DataSet:visitText(text, additionalTokens)
 end
 
 function DataSet:makeWordId(word)
+  if self.maxVocabSize > 0 and self.wordsCount >= self.maxVocabSize then
+    -- We've reached the maximum size for the vocab. Replace w/ unknown token
+    return self.unknownToken
+  end
+
   word = word:lower()
 
   local id = self.word2id[word]
 
-  if id then
-    self.wordFreq[word] = self.wordFreq[word] + 1
-  else
+  if not id then
     self.wordsCount = self.wordsCount + 1
     id = self.wordsCount
     self.id2word[id] = word
     self.word2id[word] = id
-    self.wordFreq[word] = 1
   end
 
   return id

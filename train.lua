@@ -6,7 +6,7 @@ require 'optim'
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('--dataset', 0, 'approximate size of dataset to use (0 = all)')
-cmd:option('--minWordFreq', 1, 'minimum frequency of words kept in vocab')
+cmd:option('--maxVocabSize', 0, 'max number of words in the vocab (0 = no limit)')
 cmd:option('--cuda', false, 'use CUDA')
 cmd:option('--opencl', false, 'use opencl')
 cmd:option('--hiddenSize', 300, 'number of hidden units in LSTM')
@@ -16,7 +16,7 @@ cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
-cmd:option('--batchSize', 10, 'number of examples to load at once')
+cmd:option('--batchSize', 10, 'mini-batch size')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -30,7 +30,7 @@ print("-- Loading dataset")
 dataset = neuralconvo.DataSet(neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"),
                     {
                       loadFirst = options.dataset,
-                      minWordFreq = options.minWordFreq
+                      maxVocabSize = options.maxVocabSize
                     })
 
 print("\nDataset stats:")
