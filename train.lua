@@ -1,4 +1,3 @@
---require("mobdebug").start()
 require 'neuralconvo'
 require 'xlua'
 require 'optim'
@@ -49,7 +48,6 @@ else
   model.criterion = nn.SequencerCriterion(nn.ClassNLLCriterion())
 end
 
-
 local decayFactor = (options.minLR - options.learningRate) / options.saturateEpoch
 local minMeanError = nil
 
@@ -64,20 +62,15 @@ elseif options.opencl then
   model:cl()
 end
 
-
 -- Run the experiment
-
 for epoch = 1, options.maxEpoch do
-
--- Define optimizer
   collectgarbage()
 
   local nextBatch = dataset:batches(options.batchSize)
-
-  local params, gradParams = model:getParameters()
-      
+  local params, gradParams = model:getParameters()      
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
     
+  -- Define optimizer
   local function feval(x)
     if x ~= params then
       params:copy(x)
@@ -123,7 +116,8 @@ for epoch = 1, options.maxEpoch do
 
   -- run epoch
   
-  print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
+  print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch ..
+    "  (LR= " .. optimState.learningRate .. ")")
   print("")
 
   local errors = {}
@@ -132,11 +126,8 @@ for epoch = 1, options.maxEpoch do
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
     
-    --local diff,dC,dC_est = optim.checkgrad(feval,params)
-    
     local _,tloss = optim.adam(feval, params, optimState)
     err = tloss[1] -- optim returns a list
-
   
     model.decoder:forget()
     model.encoder:forget()
@@ -145,12 +136,13 @@ for epoch = 1, options.maxEpoch do
     xlua.progress(i * options.batchSize, dataset.examplesCount)
   end
 
+  xlua.progress(dataset.examplesCount, dataset.examplesCount)
   timer:stop()
   
   errors = torch.Tensor(errors)
-  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
+  print("\n\nFinished in " .. xlua.formatTime(timer:time().real) ..
+    " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
-  print("           LR= " .. optimState.learningRate)
   print("  Errors: min= " .. errors:min())
   print("          max= " .. errors:max())
   print("       median= " .. errors:median()[1])
@@ -163,8 +155,9 @@ for epoch = 1, options.maxEpoch do
     print("\n(Saving model ...)")
     params, gradParams = nil,nil
     collectgarbage()
+    -- Model is saved as CPU
     model:float()
-    torch.save("data/model.t7", model) -- model is saved by default as cpu
+    torch.save("data/model.t7", model)
     collectgarbage()
     if options.cuda then
       model:cuda()
@@ -175,9 +168,6 @@ for epoch = 1, options.maxEpoch do
     minMeanError = errors:mean()
   end
 
-  -- optimState.learningRate = optimState.learningRate + decayFactor
-  -- optimState.learningRate = math.max(options.minLR, optimState.learningRate)
+  optimState.learningRate = optimState.learningRate + decayFactor
+  optimState.learningRate = math.max(options.minLR, optimState.learningRate)
 end
-
--- Load testing script
-require "eval"
