@@ -3,39 +3,17 @@ local tokenizer = require "tokenizer"
 local list = require "pl.List"
 local options = {}
 
-if dataset == nil then
-  cmd = torch.CmdLine()
-  cmd:text('Options:')
-  cmd:option('--cuda', false, 'use CUDA. Training must be done on CUDA')
-  cmd:option('--opencl', false, 'use OpenCL. Training must be done on OpenCL')
-  cmd:option('--debug', false, 'show debug info')
-  cmd:text()
-  options = cmd:parse(arg)
+cmd = torch.CmdLine()
+cmd:text('Options:')
+cmd:option('--debug', false, 'show debug info')
+cmd:text()
+options = cmd:parse(arg)
 
-  -- Data
-  dataset = neuralconvo.DataSet()
+-- Data
+dataset = neuralconvo.DataSet()
 
-  -- Enabled CUDA
-  if options.cuda then
-    require 'cutorch'
-    require 'cunn'
-  elseif options.opencl then
-    require 'cltorch'
-    require 'clnn'
-  end
-end
-
-if model == nil then
-  print("-- Loading model")
-  model = torch.load("data/model.t7")
-end
-
--- Enable CUDA/CL (model on disk is CPU by default)
-if options.cuda then
-  model:cuda()
-elseif options.opencl then
-  model:cl()
-end
+print("-- Loading model")
+model = torch.load("data/model.t7")
 
 -- Word IDs to sentence
 function pred2sent(wordIds, i)
@@ -76,9 +54,17 @@ function say(text)
   local input = torch.Tensor(list.reverse(wordIds))
   local wordIds, probabilities = model:eval(input)
 
-  print(">> " .. pred2sent(wordIds))
+  print("neuralconvo> " .. pred2sent(wordIds))
 
   if options.debug then
     printProbabilityTable(wordIds, probabilities, 4)
   end
+end
+
+print("\nType a sentence and hit enter to submit.")
+print("CTRL+C then enter to quit.\n")
+while true do
+  io.write("you> ")
+  io.flush()
+  io.write(say(io.read()))
 end
