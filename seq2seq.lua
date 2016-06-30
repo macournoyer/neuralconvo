@@ -10,14 +10,16 @@ end
 function Seq2Seq:buildModel()
   self.encoder = nn.Sequential()
   self.encoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
-  self.encoderLSTM = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
-  self.encoder:add(nn.Sequencer(self.encoderLSTM))
+  self.encoderLSTM = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
+  self.encoderLSTM:maskZero()
+  self.encoder:add(self.encoderLSTM)
   self.encoder:add(nn.Select(1,-1))
 
   self.decoder = nn.Sequential()
   self.decoder:add(nn.LookupTableMaskZero(self.vocabSize, self.hiddenSize))
-  self.decoderLSTM = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
-  self.decoder:add(nn.Sequencer(self.decoderLSTM))
+  self.decoderLSTM = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
+  self.decoderLSTM:maskZero()
+  self.decoder:add(self.decoderLSTM)
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.Linear(self.hiddenSize, self.vocabSize),1)))
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.LogSoftMax(),1)))
 
@@ -58,18 +60,14 @@ end
 
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
 function Seq2Seq:forwardConnect(inputSeqLen)
-  self.decoderLSTM.userPrevOutput =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevOutput, self.encoderLSTM.outputs[inputSeqLen])
-  self.decoderLSTM.userPrevCell =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevCell, self.encoderLSTM.cells[inputSeqLen])
+  self.decoderLSTM.userPrevOutput = self.encoderLSTM.output[inputSeqLen]
+  self.decoderLSTM.userPrevCell = self.encoderLSTM.cell[inputSeqLen]
 end
 
 --[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
 function Seq2Seq:backwardConnect()
-  self.encoderLSTM.userNextGradCell =
-    nn.rnn.recursiveCopy(self.encoderLSTM.userNextGradCell, self.decoderLSTM.userGradPrevCell)
-  self.encoderLSTM.gradPrevOutput =
-    nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
+  self.encoderLSTM.userNextGradCell = self.decoderLSTM.userGradPrevCell
+  self.encoderLSTM.gradPrevOutput = self.decoderLSTM.userGradPrevOutput
 end
 
 local MAX_OUTPUT_SIZE = 20
