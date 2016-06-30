@@ -72,34 +72,6 @@ function Seq2Seq:backwardConnect()
     nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
 end
 
-function Seq2Seq:train(encoderInputs, decoderInputs, decoderTargets)
-
-  -- Forward pass
-  local encoderOutput = self.encoder:forward(encoderInputs)
-  self:forwardConnect(encoderInputs:size(1))
-  local decoderOutput = self.decoder:forward(decoderInputs)
-  local Edecoder = self.criterion:forward(decoderOutput, decoderTargets)
-
-
-  -- Backward pass
-  local gEdec = self.criterion:backward(decoderOutput, decoderTargets)
-  self.decoder:backward(decoderInputs, gEdec)
-  self:backwardConnect()
-  self.encoder:backward(encoderInputs, encoderOutput:zero())
-
-  self.encoder:updateGradParameters(self.momentum)
-  self.decoder:updateGradParameters(self.momentum)
-  self.decoder:updateParameters(self.learningRate)
-  self.encoder:updateParameters(self.learningRate)
-  self.encoder:zeroGradParameters()
-  self.decoder:zeroGradParameters()
-
-  self.decoder:forget()
-  self.encoder:forget()
-
-  return Edecoder
-end
-
 local MAX_OUTPUT_SIZE = 20
 
 function Seq2Seq:eval(input)
