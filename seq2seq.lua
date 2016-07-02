@@ -70,11 +70,19 @@ function Seq2Seq:backwardConnect()
   self.encoderLSTM.gradPrevOutput = self.decoderLSTM.userGradPrevOutput
 end
 
-local MAX_OUTPUT_SIZE = 20
+local MAX_OUTPUT_SIZE = 25
 
 function Seq2Seq:eval(input)
   assert(self.goToken, "No goToken specified")
   assert(self.eosToken, "No eosToken specified")
+  assert(input:size(1) <= MAX_OUTPUT_SIZE, "Input too big")
+
+  local input_len = input:size(1)
+
+  -- Resize and pad input to MAX_OUTPUT_SIZE
+  input:resize(MAX_OUTPUT_SIZE, 1)
+  input:sub(input_len + 1, MAX_OUTPUT_SIZE):zero()
+  input = input:t()
 
   self.encoder:forward(input)
   self:forwardConnect(input:size(1))
@@ -85,7 +93,12 @@ function Seq2Seq:eval(input)
   -- Forward <go> and all of it's output recursively back to the decoder
   local output = {self.goToken}
   for i = 1, MAX_OUTPUT_SIZE do
-    local prediction = self.decoder:forward(torch.Tensor(output))[#output]
+    -- Resize and pad output to MAX_OUTPUT_SIZE
+    local t = torch.Tensor(output):resize(MAX_OUTPUT_SIZE, 1)
+    t:sub(#output + 1, MAX_OUTPUT_SIZE):zero()
+    t = t:t()
+
+    local prediction = self.decoder:forward(t)[1][#output]
     -- prediction contains the probabilities for each word IDs.
     -- The index of the probability is the word ID.
     local prob, wordIds = prediction:topk(5, 1, true, true)
