@@ -59,10 +59,12 @@ if options.cuda then
   require 'cutorch'
   require 'cunn'
   model:cuda()
+  model.criterion:cuda()
 elseif options.opencl then
   require 'cltorch'
   require 'clnn'
   model:cl()
+  model.criterion:cl()
 end
 
 
@@ -197,7 +199,7 @@ for epoch = 1, options.maxEpoch do
   -- Save the model if it improved.
   if minMeanError == nil or earlyStopLoss < minMeanError then
     print("\n(Saving model ...)")
-    params, gradParams = nil,nil
+    params, gradParams, optimState, feval = nil,nil,nil,nil
     collectgarbage()
     model:float()
     collectgarbage()
