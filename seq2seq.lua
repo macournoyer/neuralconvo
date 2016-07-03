@@ -16,9 +16,10 @@ function Seq2Seq:buildModel()
   
   self.encLstmLayers = {}
   for i=1,self.numLayers do
-    self.encLstmLayers[i] = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
-    self.encoder:add(nn.Sequencer(self.encLstmLayers[i]))
-    self.encoder:add(nn.Dropout(self.dropout))
+    self.encLstmLayers[i] = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
+    self.encLstmLayers[i]:maskZero()
+    self.encoder:add(self.encLstmLayers[i])
+    self.encoder:add(nn.Sequencer(nn.Dropout(self.dropout)))
   end
   
   self.encoder:add(nn.Select(1,-1))
@@ -28,9 +29,10 @@ function Seq2Seq:buildModel()
   
   self.decLstmLayers = {}
   for i=1,self.numLayers do
-    self.decLstmLayers[i] = nn.FastLSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
-    self.decoder:add(nn.Sequencer(self.decLstmLayers[i]))
-    self.decoder:add(nn.Dropout(self.dropout))
+    self.decLstmLayers[i] = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
+    self.decLstmLayers[i]:maskZero()
+    self.decoder:add(self.decLstmLayers[i])
+    self.decoder:add(nn.Sequencer(nn.Dropout(self.dropout)))
   end
   
   self.decoder:add(nn.Sequencer(nn.MaskZero(nn.Linear(self.hiddenSize, self.vocabSize),1)))
@@ -44,9 +46,9 @@ end
 function Seq2Seq:forwardConnect(inputSeqLen)
   for i=1,self.numLayers do
     self.decLstmLayers[i].userPrevOutput =
-      nn.rnn.recursiveCopy(self.decLstmLayers[i].userPrevOutput, self.encLstmLayers[i].outputs[inputSeqLen])
+      self.encLstmLayers[i].output[inputSeqLen]
     self.decLstmLayers[i].userPrevCell =
-      nn.rnn.recursiveCopy(self.decLstmLayers[i].userPrevCell, self.encLstmLayers[i].cells[inputSeqLen])
+      self.encLstmLayers[i].cell[inputSeqLen]
   end
 end
 
@@ -54,9 +56,9 @@ end
 function Seq2Seq:backwardConnect()
   for i=1,self.numLayers do
     self.encLstmLayers[i].userNextGradCell =
-      nn.rnn.recursiveCopy(self.encLstmLayers[i].userNextGradCell, self.decLstmLayers[i].userGradPrevCell)
+      self.decLstmLayers[i].userGradPrevCell
     self.encLstmLayers[i].gradPrevOutput =
-      nn.rnn.recursiveCopy(self.encLstmLayers[i].gradPrevOutput, self.decLstmLayers[i].userGradPrevOutput)
+      self.decLstmLayers[i].userGradPrevOutput
   end
 end
 
@@ -145,7 +147,7 @@ function Seq2Seq:eval(input)
   -- Forward <go> and all of it's output recursively back to the decoder
   local output = {self.goToken}
   for i = 1, MAX_OUTPUT_SIZE do
-    local prediction = self.decoder:forward(torch.Tensor(output))[#output]
+    local prediction = self.decoder:forward(torch.Tensor({output}):t())[#output][1]
     -- prediction contains the probabilities for each word IDs.
     -- The index of the probability is the word ID.
     local prob, wordIds = prediction:topk(5, 1, true, true)

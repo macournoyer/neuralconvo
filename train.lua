@@ -21,7 +21,7 @@ cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach m
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'number of examples to load at once')
 cmd:option('--weightDecay', 0.001, 'Weight decay aka L2 regularization')
-cmd:option('--dropout', 0.5, 'dropout regularization (0=none)')
+cmd:option('--dropout', 0.2, 'dropout regularization (0=none)')
 
 cmd:text()
 options = cmd:parse(arg)
