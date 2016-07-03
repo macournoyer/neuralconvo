@@ -52,7 +52,7 @@ function say(text)
     table.insert(wordIds, id)
   end
 
-  local input = torch.Tensor(list.reverse(wordIds))
+  local input = torch.Tensor({list.reverse(wordIds)}):t()
   local wordIds, probabilities = model:eval(input)
 
   print("neuralconvo> " .. pred2sent(wordIds))
