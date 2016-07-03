@@ -28,40 +28,40 @@ th train.lua --cuda --dataset 50000 --hiddenSize 1000
 
 For OpenCL, use `--opencl` instead of `--cuda`. To train on CPU, don't provide any of those two.
 
-> **me:** Hello?
+> **me:** Hello?  
 > **bot:** Hi.
 > 
-> **me:** How are you?
+> **me:** How are you?  
 > **bot:** I'm fine.
 > 
-> **me:** What's your name?
+> **me:** What's your name?  
 > **bot:** It's hard to describe.
 > 
-> **me:** How so?
+> **me:** How so?  
 > **bot:** I'm not sure.
 > 
-> **me:** What color is the sky?
+> **me:** What color is the sky?  
 > **bot:** It's blue.
 > 
-> **me:** What is your job?
+> **me:** What is your job?  
 > **bot:** It's not that i'm a fucking werewolf!
 > 
-> **me:** What is the purpose of life?
+> **me:** What is the purpose of life?  
 > **bot:** A gift.
 > 
-> **me:** Are you intelligent?
+> **me:** Are you intelligent?  
 > **bot:** Yes, well...
 > 
-> **me:** Are you a machine?
+> **me:** Are you a machine?  
 > **bot:** That's a lie.
 > 
-> **me:** Are you human?
+> **me:** Are you human?  
 > **bot:** No, i'm not.
 > 
-> **me:** What are you?
+> **me:** What are you?  
 > **bot:** I'm not sure.
 >
-> **me:** Do you plan on taking over the world?
+> **me:** Do you plan on taking over the world?  
 > **bot:** No, i don't.
 
 Phew! That was close. Good thing I didn't train it on the full dataset. Please experiment responsibly.
@@ -110,9 +110,7 @@ The model will be saved to `data/model.t7` after each epoch if it has improved (
 To load the model and have a conversation:
 
 ```sh
-th -i eval.lua --cuda # Skip --cuda if you didn't train with it
-# ...
-th> say "Hello."
+th eval.lua
 ```
 
 ## License

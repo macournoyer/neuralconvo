@@ -1,4 +1,3 @@
---require("mobdebug").start()
 require 'neuralconvo'
 require 'xlua'
 require 'optim'
@@ -19,7 +18,7 @@ cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
-cmd:option('--batchSize', 10, 'number of examples to load at once')
+cmd:option('--batchSize', 10, 'mini-batch size')
 cmd:option('--weightDecay', 0.001, 'Weight decay aka L2 regularization')
 cmd:option('--dropout', 0.2, 'dropout regularization (0=none)')
 
@@ -96,21 +95,19 @@ function eval_val(vmodel,val_data)
 end
 
 -- Run the experiment
-
 for epoch = 1, options.maxEpoch do
-
--- Define optimizer
   collectgarbage()
 
   dataset:shuffleExamples()
+
   local nextBatch = dataset:batches(dataset.examples,options.batchSize)
 
   local params, gradParams = model:getParameters()
       
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
-  
+
   model:training() -- set flag for dropout
-    
+  -- Define closure for optimizer  
   local function feval(x)
     
     gradParams:zero()
@@ -147,7 +144,8 @@ for epoch = 1, options.maxEpoch do
 
   -- run epoch
   
-  print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch)
+  print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch ..
+    "  (LR= " .. optimState.learningRate .. ")")
   print("")
 
   local errors,gradNorms = {},{}
@@ -156,12 +154,9 @@ for epoch = 1, options.maxEpoch do
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
     
-    --local diff,dC,dC_est = optim.checkgrad(feval,params)
-    
     local _,tloss = optim.adam(feval, params, optimState)
     --cutorch.synchronize()
     err = tloss[1] -- optim returns a list
-
   
     model.decoder:forget()
     model.encoder:forget()
@@ -172,15 +167,17 @@ for epoch = 1, options.maxEpoch do
   end
   cutorch.synchronize()
 
+  xlua.progress(dataset.examplesCount, dataset.examplesCount)
   timer:stop()
   
   local val_loss = eval_val(model,dataset.devExamples)
   errors = torch.Tensor(errors)
+  
+  print("\n\nFinished in " .. xlua.formatTime(timer:time().real) ..
+    " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   local train_loss = errors:mean()
   
-  print("\nFinished in " .. xlua.formatTime(timer:time().real) .. " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
   print("\nEpoch stats:")
-  print("           LR= " .. optimState.learningRate)
   print("  Errors: min= " .. errors:min())
   print("          max= " .. errors:max())
   print("       median= " .. errors:median()[1])
@@ -201,6 +198,7 @@ for epoch = 1, options.maxEpoch do
     print("\n(Saving model ...)")
     params, gradParams, optimState, feval = nil,nil,nil,nil
     collectgarbage()
+    -- Model is saved as CPU
     model:float()
     model.criterion:float()
     collectgarbage()
@@ -216,9 +214,7 @@ for epoch = 1, options.maxEpoch do
     minMeanError = earlyStopLoss
   end
 
-  -- optimState.learningRate = optimState.learningRate + decayFactor
+  -- # adam optimizer take cares of learning rate decay
+  -- optimState.learningRate = optimState.learningRate + decayFactor 
   -- optimState.learningRate = math.max(options.minLR, optimState.learningRate)
 end
-
--- Load testing script
-require "eval"

@@ -23,7 +23,7 @@ function DataSet:__init(samples_file, options)
 
   self.examplesFilename = "data/examples.t7"
 
-  -- Discard words with lower frequency then this
+  -- Reject words once vocab size reaches this threshold
   self.vocabSize = options.vocabSize or -1
 
   -- Maximum number of words in an example sentence
@@ -261,6 +261,7 @@ function DataSet:visitText(text)
 
   return words
 end
+
 
 function DataSet:countWords(sentence)
   --if text == "" then
