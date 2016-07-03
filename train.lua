@@ -200,13 +200,16 @@ for epoch = 1, options.maxEpoch do
     collectgarbage()
     -- Model is saved as CPU
     model:float()
+    model.criterion:float()
     collectgarbage()
     torch.save("data/model.t7", model) -- model is saved by default as cpu
     collectgarbage()
     if options.cuda then
       model:cuda()
+      model.criterion:cuda()
     elseif options.opencl then
       model:cl()
+      model.criterion:cl()
     end
     minMeanError = earlyStopLoss
   end
