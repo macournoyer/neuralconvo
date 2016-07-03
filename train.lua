@@ -214,6 +214,7 @@ for epoch = 1, options.maxEpoch do
     minMeanError = earlyStopLoss
   end
 
-  optimState.learningRate = optimState.learningRate + decayFactor
-  optimState.learningRate = math.max(options.minLR, optimState.learningRate)
+  -- # adam optimizer take cares of learning rate decay
+  -- optimState.learningRate = optimState.learningRate + decayFactor 
+  -- optimState.learningRate = math.max(options.minLR, optimState.learningRate)
 end

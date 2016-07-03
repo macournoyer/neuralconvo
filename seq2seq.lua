@@ -91,22 +91,6 @@ function Seq2Seq:getParameters()
   return nn.Container():add(self.encoder):add(self.decoder):getParameters()
 end
 
---[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
-function Seq2Seq:forwardConnect(inputSeqLen)
-  self.decoderLSTM.userPrevOutput =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevOutput, self.encoderLSTM.outputs[inputSeqLen])
-  self.decoderLSTM.userPrevCell =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevCell, self.encoderLSTM.cells[inputSeqLen])
-end
-
---[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
-function Seq2Seq:backwardConnect()
-  self.encoderLSTM.userNextGradCell =
-    nn.rnn.recursiveCopy(self.encoderLSTM.userNextGradCell, self.decoderLSTM.userGradPrevCell)
-  self.encoderLSTM.gradPrevOutput =
-    nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
-end
-
 local MAX_OUTPUT_SIZE = 20
 
 function Seq2Seq:eval(input)
