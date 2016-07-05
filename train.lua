@@ -12,7 +12,7 @@ cmd:option('--learningRate', 0.05, 'learning rate at t=0')
 cmd:option('--momentum', 0.9, 'momentum')
 cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
-cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
+cmd:option('--maxEpoch', 30, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'number of examples to load at once')
 
 cmd:text()

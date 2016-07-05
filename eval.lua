@@ -37,7 +37,7 @@ function pred2sent(wordIds, i)
 
   for _, wordId in ipairs(wordIds) do
     local word = dataset.id2word[wordId[i]]
-    print(wordId[i]..word)
+    --print(wordId[i]..word)
     table.insert(words, word)
   end
 
@@ -68,7 +68,7 @@ function say(text)
   local values = stringx.split(text, " ")
   for i, word in ipairs(values) do
     local id = dataset.word2id[word] or dataset.unknownToken
-    print(i.." "..word.." "..id)
+    --print(i.." "..word.." "..id)
 
     table.insert(wordIds, id)
 

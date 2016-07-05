@@ -15,7 +15,7 @@ function CornellMovieDialogs:load()
   print("-- Parsing Cornell movie dialogs data set ...")
 
 
-  local f = assert(io.open('../dgk_shooter_z.conv', 'r'))
+  local f = assert(io.open('../xiaohuangji50w_fenciA.conv', 'r'))
 
   while true do
       local line = f:read("*line")
