@@ -7,6 +7,7 @@ function Seq2Seq:__init(vocabSize, hiddenSize, numLayers, options)
   local optOptions = options or {}
   self.numLayers = numLayers or 1
   self.dropout = optOptions.dropout or 0
+  self.seqLstm = optOptions.seqLstm
   self:buildModel()
 end
 
@@ -16,9 +17,14 @@ function Seq2Seq:buildModel()
   
   self.encLstmLayers = {}
   for i=1,self.numLayers do
-    self.encLstmLayers[i] = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
-    self.encLstmLayers[i]:maskZero()
-    self.encoder:add(self.encLstmLayers[i])
+    if not self.seqLstm then
+      self.encLstmLayers[i] = nn.LSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
+      self.encoder:add(nn.Sequencer(self.encLstmLayers[i]))
+    else
+      self.encLstmLayers[i] = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
+      self.encLstmLayers[i]:maskZero()
+      self.encoder:add(self.encLstmLayers[i])
+    end
     self.encoder:add(nn.Sequencer(nn.Dropout(self.dropout)))
   end
   
@@ -29,9 +35,14 @@ function Seq2Seq:buildModel()
   
   self.decLstmLayers = {}
   for i=1,self.numLayers do
-    self.decLstmLayers[i] = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
-    self.decLstmLayers[i]:maskZero()
-    self.decoder:add(self.decLstmLayers[i])
+    if not self.seqLstm then
+      self.decLstmLayers[i] = nn.LSTM(self.hiddenSize, self.hiddenSize):maskZero(1)
+      self.decoder:add(nn.Sequencer(self.decLstmLayers[i]))
+    else
+      self.decLstmLayers[i] = nn.SeqLSTM(self.hiddenSize, self.hiddenSize)
+      self.decLstmLayers[i]:maskZero()
+      self.decoder:add(self.decLstmLayers[i])
+    end
     self.decoder:add(nn.Sequencer(nn.Dropout(self.dropout)))
   end
   
@@ -45,20 +56,34 @@ end
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
 function Seq2Seq:forwardConnect(inputSeqLen)
   for i=1,self.numLayers do
-    self.decLstmLayers[i].userPrevOutput =
-      self.encLstmLayers[i].output[inputSeqLen]
-    self.decLstmLayers[i].userPrevCell =
-      self.encLstmLayers[i].cell[inputSeqLen]
+    if not self.seqLstm then
+      self.decLstmLayers[i].userPrevOutput = 
+        nn.rnn.recursiveCopy(self.decLstmLayers[i].userPrevOutput, self.encLstmLayers[i].outputs[inputSeqLen])
+      self.decLstmLayers[i].userPrevCell =
+        nn.rnn.recursiveCopy(self.decLstmLayers[i].userPrevCell, self.encLstmLayers[i].cells[inputSeqLen])
+    else
+      self.decLstmLayers[i].userPrevOutput =
+        self.encLstmLayers[i].output[inputSeqLen]
+      self.decLstmLayers[i].userPrevCell =
+        self.encLstmLayers[i].cell[inputSeqLen]
+    end
   end
 end
 
 --[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
 function Seq2Seq:backwardConnect()
   for i=1,self.numLayers do
-    self.encLstmLayers[i].userNextGradCell =
-      self.decLstmLayers[i].userGradPrevCell
-    self.encLstmLayers[i].gradPrevOutput =
-      self.decLstmLayers[i].userGradPrevOutput
+    if not self.seqLstm then
+      self.encLstmLayers[i].userNextGradCell = 
+        nn.rnn.recursiveCopy(self.encLstmLayers[i].userNextGradCell, self.decLstmLayers[i].userGradPrevCell)
+      self.encLstmLayers[i].gradPrevOutput =
+        nn.rnn.recursiveCopy(self.encLstmLayers[i].gradPrevOutput, self.decLstmLayers[i].userGradPrevOutput)
+    else
+      self.encLstmLayers[i].userNextGradCell =
+        self.decLstmLayers[i].userGradPrevCell
+      self.encLstmLayers[i].gradPrevOutput =
+        self.decLstmLayers[i].userGradPrevOutput
+    end
   end
 end
 
