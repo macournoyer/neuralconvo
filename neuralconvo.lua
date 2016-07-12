@@ -1,6 +1,7 @@
 require 'torch'
 require 'nn'
 require 'rnn'
+require 'csvigo'
 
 neuralconvo = {}
 
