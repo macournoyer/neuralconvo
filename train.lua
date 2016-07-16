@@ -16,6 +16,7 @@ cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'mini-batch size')
+cmd:option('--createNewVocabAndExamples', true, 'create new vocabulary and examples files, keep it false if the dataset and maxVocabSize is unchanged')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -29,7 +30,8 @@ print("-- Loading dataset")
 dataset = neuralconvo.DataSet(neuralconvo.CornellMovieDialogs("data/cornell_movie_dialogs"),
                     {
                       loadFirst = options.dataset,
-                      maxVocabSize = options.maxVocabSize
+                      maxVocabSize = options.maxVocabSize,
+                      createNewVocabAndExamples = options.createNewVocabAndExamples
                     })
 
 print("\nDataset stats:")
@@ -67,18 +69,18 @@ for epoch = 1, options.maxEpoch do
   collectgarbage()
 
   local nextBatch = dataset:batches(options.batchSize)
-  local params, gradParams = model:getParameters()      
+  local params, gradParams = model:getParameters()
   local optimState = {learningRate=options.learningRate,momentum=options.momentum}
-    
+
   -- Define optimizer
   local function feval(x)
     if x ~= params then
       params:copy(x)
     end
-    
+
     gradParams:zero()
     local encoderInputs, decoderInputs, decoderTargets = nextBatch()
-    
+
     if options.cuda then
       encoderInputs = encoderInputs:cuda()
       decoderInputs = decoderInputs:cuda()
@@ -94,7 +96,7 @@ for epoch = 1, options.maxEpoch do
     model:forwardConnect(encoderInputs:size(1))
     local decoderOutput = model.decoder:forward(decoderInputs)
     local loss = model.criterion:forward(decoderOutput, decoderTargets)
-    
+
     local avgSeqLen = nil
     if #decoderInputs:size() == 1 then
       avgSeqLen = decoderInputs:size(1)
@@ -102,20 +104,20 @@ for epoch = 1, options.maxEpoch do
       avgSeqLen = torch.sum(torch.sign(decoderInputs)) / decoderInputs:size(2)
     end
     loss = loss / avgSeqLen
-    
+
     -- Backward pass
     local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
     model.decoder:backward(decoderInputs, dloss_doutput)
     model:backwardConnect()
     model.encoder:backward(encoderInputs, encoderOutput:zero())
-    
+
     gradParams:clamp(-options.gradientClipping, options.gradientClipping)
-    
+
     return loss,gradParams
   end
 
   -- run epoch
-  
+
   print("\n-- Epoch " .. epoch .. " / " .. options.maxEpoch ..
     "  (LR= " .. optimState.learningRate .. ")")
   print("")
@@ -125,10 +127,10 @@ for epoch = 1, options.maxEpoch do
 
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
-    
+
     local _,tloss = optim.adam(feval, params, optimState)
     err = tloss[1] -- optim returns a list
-  
+
     model.decoder:forget()
     model.encoder:forget()
 
@@ -138,7 +140,7 @@ for epoch = 1, options.maxEpoch do
 
   xlua.progress(dataset.examplesCount, dataset.examplesCount)
   timer:stop()
-  
+
   errors = torch.Tensor(errors)
   print("\n\nFinished in " .. xlua.formatTime(timer:time().real) ..
     " " .. (dataset.examplesCount / timer:time().real) .. ' examples/sec.')
@@ -168,6 +170,6 @@ for epoch = 1, options.maxEpoch do
     minMeanError = errors:mean()
   end
 
-  optimState.learningRate = optimState.learningRate + decayFactor
-  optimState.learningRate = math.max(options.minLR, optimState.learningRate)
+  -- optimState.learningRate = optimState.learningRate + decayFactor
+  -- optimState.learningRate = math.max(options.minLR, optimState.learningRate)
 end
