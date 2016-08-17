@@ -63,12 +63,12 @@ elseif options.opencl then
 end
 
 -- Run the experiment
+local optimState = {learningRate=options.learningRate,momentum=options.momentum}
 for epoch = 1, options.maxEpoch do
   collectgarbage()
 
   local nextBatch = dataset:batches(options.batchSize)
   local params, gradParams = model:getParameters()      
-  local optimState = {learningRate=options.learningRate,momentum=options.momentum}
     
   -- Define optimizer
   local function feval(x)
