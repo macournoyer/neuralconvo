@@ -35,7 +35,7 @@ function printProbabilityTable(wordIds, probabilities, num)
     local line = "| "
     for i = 1, num do
       local word = dataset.id2word[wordId[i]]
-      line = line .. string.format("%-10s(%4d%%)", word, probabilities[p][i] * 100) .. "  |  "
+      line = line .. string.format("%-10s(%4d%%)", word, torch.exp(probabilities[p][i]) * 100) .. "  |  "
     end
     print(line)
   end
