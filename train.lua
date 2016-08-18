@@ -16,6 +16,7 @@ cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'mini-batch size')
+cmd:option('--gpu', 0, 'Zero-indexed ID of the GPU to use; for CPU mode set --gpu = -1')
 
 cmd:text()
 options = cmd:parse(arg)
@@ -55,10 +56,12 @@ local minMeanError = nil
 if options.cuda then
   require 'cutorch'
   require 'cunn'
+  cutorch.setDevice(options.gpu + 1)
   model:cuda()
 elseif options.opencl then
   require 'cltorch'
   require 'clnn'
+  cltorch.setDevice(options.gpu + 1)
   model:cl()
 end
 
@@ -125,7 +128,7 @@ for epoch = 1, options.maxEpoch do
 
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
-    
+    print(optimState)    
     local _,tloss = optim.adam(feval, params, optimState)
     err = tloss[1] -- optim returns a list
   
