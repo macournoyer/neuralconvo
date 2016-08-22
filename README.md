@@ -101,9 +101,14 @@ _(Disclaimer: nonsensical responses have been removed.)_
 th train.lua [-h / options]
 ```
 
-Use the `--dataset NUMBER` option to control the size of the dataset. Training on the full dataset takes about 5h for a single epoch.
-
 The model will be saved to `data/model.t7` after each epoch if it has improved (error decreased).
+
+### Options (some, not all)
+- `--opencl` use opencl for computation (requires [torch-cl](https://github.com/hughperkins/distro-cl))
+- `--cuda` use cuda for computation
+- `--gpu [index]` use the nth GPU for computation (eg. on a 2015 MacBook `--gpu 0` results in the Intel GPU being used while `--gpu 1` uses the far more powerful AMD GPU)
+- `-- dataset [size]` control the size of the dataset
+- `--maxEpoch [amount]` specify the number of epochs to run
 
 ## Testing
 
