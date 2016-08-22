@@ -16,7 +16,7 @@ cmd:option('--minLR', 0.00001, 'minimum learning rate')
 cmd:option('--saturateEpoch', 20, 'epoch at which linear decayed LR will reach minLR')
 cmd:option('--maxEpoch', 50, 'maximum number of epochs to run')
 cmd:option('--batchSize', 10, 'mini-batch size')
-cmd:option('--gpu', 0, 'Zero-indexed ID of the GPU to use; for CPU mode set --gpu = -1')
+cmd:option('--gpu', 0, 'Zero-indexed ID of the GPU to use. Optional.')
 
 cmd:text()
 options = cmd:parse(arg)
