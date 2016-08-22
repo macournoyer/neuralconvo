@@ -128,7 +128,6 @@ for epoch = 1, options.maxEpoch do
 
   for i=1, dataset.examplesCount/options.batchSize do
     collectgarbage()
-    print(optimState)    
     local _,tloss = optim.adam(feval, params, optimState)
     err = tloss[1] -- optim returns a list
   
