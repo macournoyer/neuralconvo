@@ -59,7 +59,6 @@ function printProbabilityTable(wordIds, probabilities, num)
   print(string.rep("-", num * 22))
 end
 
-
 function say(text)
   local wordIds = {}
 
@@ -70,10 +69,10 @@ function say(text)
   for w in text:gmatch("[\33-\127\192-\255]+[\128-\191]*") do
      table.insert(values, w)
   end
-  -- print(values)
+
   for i, word in ipairs(values) do
     local id = dataset.word2id[word] or dataset.unknownToken
-    -- print(i.." "..word.." "..id)
+    --print(i.." "..word.." "..id)
 
     table.insert(wordIds, id)
 
@@ -89,10 +88,68 @@ function say(text)
   local input = torch.Tensor(list.reverse(wordIds))
   local wordIds, probabilities = model:eval(input)
 
-
-  print(">> " .. pred2sent(wordIds))
+  local ret = pred2sent(wordIds)
+  print(">> " .. ret)
 
   if options.debug then
     printProbabilityTable(wordIds, probabilities, 4)
   end
+
+  return ret
+
 end
+
+
+--[[ http server using ASyNC]]--
+
+ function unescape (s)
+      s = string.gsub(s, "+", " ")
+      s = string.gsub(s, "%%(%x%x)", function (h)
+            return string.char(tonumber(h, 16))
+          end)
+      return s
+    end
+
+
+local async = require 'async'
+require('pl.text').format_operator()
+
+async.http.listen('http://0.0.0.0:8082/', function(req,res)
+   print('request:',req)
+   local resp
+
+   if req.url.path == '/' and  req.url.query ~= nil and  #req.url.query > 0 then
+
+    local text_in = unescape(req.url.query)
+    print(text_in)
+    local ret = say(text_in)
+    resp = [[${data}]] % {data = ret}
+
+   else
+    resp = 'Oops~  This is a wrong place, please goto <a href="/?你好啊"> here!</a>' 
+
+   end
+
+  --  if req.url.path == '/test' then
+  --     resp  = [[
+  --     <p>You requested route /test</p>
+  --     ]]
+  --  else
+  --     -- Produce a random story:
+  --     resp = [[
+  --     <h1>From my server</h1>
+  --     <p>It's working!<p>
+  --     <p>Randomly generated number: ${number}</p>
+  --     <p>A variable in the global scope: ${ret}</p>
+  --     ]] % {
+  --        number = math.random(),
+  --        ret = ret
+  --     }
+  --  end
+
+   res(resp, {['Content-Type']='text/html; charset=UTF-8'})
+end)
+
+print('server listening to port 8082')
+
+async.go()
