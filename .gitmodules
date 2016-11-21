@@ -1,0 +1,3 @@
+[submodule "seq2seq-attn"]
+	path = seq2seq-attn
+	url = git@github.com:harvardnlp/seq2seq-attn.git

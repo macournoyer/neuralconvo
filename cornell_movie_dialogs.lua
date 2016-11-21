@@ -1,6 +1,5 @@
-local CornellMovieDialogs = torch.class("neuralconvo.CornellMovieDialogs")
+local CornellMovieDialogs = torch.class("CornellMovieDialogs")
 local stringx = require "pl.stringx"
-local xlua = require "xlua"
 
 local function parsedLines(file, fields)
   local f = assert(io.open(file, 'r'))
@@ -32,19 +31,10 @@ local MOVIE_LINES_FIELDS = {"lineID","characterID","movieID","character","text"}
 local MOVIE_CONVERSATIONS_FIELDS = {"character1ID","character2ID","movieID","utteranceIDs"}
 local TOTAL_LINES = 387810
 
-local function progress(c)
-  if c % 10000 == 0 then
-    xlua.progress(c, TOTAL_LINES)
-  end
-end
-
-function CornellMovieDialogs:load()
+function CornellMovieDialogs:load(callback, progress)
   local lines = {}
-  local conversations = {}
   local count = 0
 
-  print("-- Parsing Cornell movie dialogs data set ...")
-  
   for line in parsedLines(self.dir .. "/movie_lines.txt", MOVIE_LINES_FIELDS) do
     lines[line.lineID] = line
     line.lineID = nil
@@ -52,7 +42,7 @@ function CornellMovieDialogs:load()
     line.characterID = nil
     line.movieID = nil
     count = count + 1
-    progress(count)
+    progress(count, TOTAL_LINES)
   end
 
   for conv in parsedLines(self.dir .. "/movie_conversations.txt", MOVIE_CONVERSATIONS_FIELDS) do
@@ -61,12 +51,12 @@ function CornellMovieDialogs:load()
     for i,lineID in ipairs(lineIDs) do
       table.insert(conversation, lines[lineID])
     end
-    table.insert(conversations, conversation)
+    callback(conversation)
     count = count + 1
-    progress(count)
+    progress(count, TOTAL_LINES)
   end
 
-  xlua.progress(TOTAL_LINES, TOTAL_LINES)
+  progress(TOTAL_LINES, TOTAL_LINES)
 
   return conversations
 end
