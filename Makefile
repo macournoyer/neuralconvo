@@ -1,24 +1,22 @@
-DATA=$(shell pwd)/data
-
-$(DATA)/data-train.hdf5: $(DATA)/train-source.txt
+data/data-train.hdf5: data/train-source.txt
 	cd seq2seq-attn && python preprocess.py \
-		--srcfile $(DATA)/train-source.txt \
-		--targetfile $(DATA)/train-target.txt \
-		--srcvalfile $(DATA)/validation-source.txt \
-		--targetvalfile $(DATA)/validation-target.txt \
-		--outputfile $(DATA)/data
+		--srcfile data/train-source.txt \
+		--targetfile data/train-target.txt \
+		--srcvalfile data/validation-source.txt \
+		--targetvalfile data/validation-target.txt \
+		--outputfile data/data
 
-$(DATA)/train-source.txt:
-	th prepreprocess.lua --srcfile $(DATA)/train-source.txt --targetfile $(DATA)/train-target.txt
+data/train-source.txt:
+	th prepreprocess.lua --srcfile data/train-source.txt --targetfile data/train-target.txt
 
 train:
 	cd seq2seq-attn && \
 		th train.lua \
-			-data_file $(DATA)/data-train.hdf5 \
-			-val_data_file $(DATA)/data-val.hdf5 \
-			-savefile $(DATA)/model
+			-data_file ../data/data-train.hdf5 \
+			-val_data_file ../data/data-val.hdf5 \
+			-savefile ../data/model
 
 clean:
-	rm -f $(DATA)/train-*.txt $(DATA)/*.{hdf5,dict}
+	rm -f data/train-*.txt data/*.{hdf5,dict}
 
-.PHONY: clean
+.PHONY: train clean
