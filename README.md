@@ -28,6 +28,8 @@ th train.lua --cuda --dataset 50000 --hiddenSize 1000
 
 For OpenCL, use `--opencl` instead of `--cuda`. To train on CPU, don't provide any of those two.
 
+*WARNING: I can no longer reproduce those results. The cause seems to be a change in one of dependencies. But I'm currently working on a new implementation based on [harvardnlp/seq2seq-attn](https://github.com/harvardnlp/seq2seq-attn).*
+
 > **me:** Hello?  
 > **bot:** Hi.
 > 
