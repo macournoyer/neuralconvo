@@ -65,11 +65,8 @@ function Seq2Seq:forwardConnect(inputSeqLen)
 end
 
 --[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
-function Seq2Seq:backwardConnect()
-  self.encoderLSTM.userNextGradCell =
-    nn.rnn.recursiveCopy(self.encoderLSTM.userNextGradCell, self.decoderLSTM.userGradPrevCell)
-  self.encoderLSTM.gradPrevOutput =
-    nn.rnn.recursiveCopy(self.encoderLSTM.gradPrevOutput, self.decoderLSTM.userGradPrevOutput)
+function Seq2Seq:backwardConnect(inputSeqLen)
+  self.encoderLSTM:setGradHiddenState(inputSeqLen, self.decoderLSTM:getGradHiddenState(0))
 end
 
 local MAX_OUTPUT_SIZE = 20

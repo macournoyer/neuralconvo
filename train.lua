@@ -109,7 +109,7 @@ for epoch = 1, options.maxEpoch do
     -- Backward pass
     local dloss_doutput = model.criterion:backward(decoderOutput, decoderTargets)
     model.decoder:backward(decoderInputs, dloss_doutput)
-    model:backwardConnect()
+    model:backwardConnect(encoderInputs:size(1))
     model.encoder:backward(encoderInputs, encoderOutput:zero())
     
     gradParams:clamp(-options.gradientClipping, options.gradientClipping)
