@@ -158,7 +158,7 @@ for epoch = 1, options.maxEpoch do
     params, gradParams = nil,nil
     collectgarbage()
     -- Model is saved as CPU
-    model:float()
+    model:double()
     torch.save("data/model.t7", model)
     collectgarbage()
     if options.cuda then

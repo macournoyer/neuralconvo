@@ -43,6 +43,17 @@ function Seq2Seq:float()
   end
 end
 
+-- function Seq2Seq:double()
+-- created by zhaopku to fix the problem of CPU mode
+function Seq2Seq:double()
+  self.encoder:double()
+  self.decoder:double()
+
+  if self.criterion then
+    self.criterion:double()
+  end
+end
+
 function Seq2Seq:cl()
   self.encoder:cl()
   self.decoder:cl()
