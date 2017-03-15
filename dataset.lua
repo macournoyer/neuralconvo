@@ -38,32 +38,18 @@ function DataSet:__init(loader, options)
 end
 
 function DataSet:load(loader)
-  local filename = "data/vocab.t7"
-
-  if path.exists(filename) then
-    print("Loading vocabulary from " .. filename .. " ...")
-    local data = torch.load(filename)
-    self.word2id = data.word2id
-    self.id2word = data.id2word
-    self.wordsCount = data.wordsCount
-    self.goToken = data.goToken
-    self.eosToken = data.eosToken
-    self.unknownToken = data.unknownToken
-    self.examplesCount = data.examplesCount
-  else
-    print("" .. filename .. " not found")
-    self:visit(loader:load())
-    print("Writing " .. filename .. " ...")
-    torch.save(filename, {
-      word2id = self.word2id,
-      id2word = self.id2word,
-      wordsCount = self.wordsCount,
-      goToken = self.goToken,
-      eosToken = self.eosToken,
-      unknownToken = self.unknownToken,
-      examplesCount = self.examplesCount
-    })
-  end
+  local filenam = 'data/vocab.t7'
+  self:visit(loader:load())
+  print("Writing " .. filename .. " ...")
+  torch.save(filename, {
+    word2id = self.word2id,
+    id2word = self.id2word,
+    wordsCount = self.wordsCount,
+    goToken = self.goToken,
+    eosToken = self.eosToken,
+    unknownToken = self.unknownToken,
+    examplesCount = self.examplesCount
+  })
 end
 
 function DataSet:visit(conversations)
