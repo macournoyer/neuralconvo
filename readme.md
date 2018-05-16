@@ -2,13 +2,23 @@
 
 Forked from https://github.com/chenb67/neuralconvo
 
-如果训练中遇到问题请先翻原始fork的issue，这里只是改成中文而已！很多人找到这里，总问我怎么训练呀等等，我也没时间回答，所以我给大家建了一个QQ群：
+如果训练中遇到问题请先翻原始fork的issue，这里只是改成中文而已！
+
+本repo不会更新，交流请加QQ群：
+
+1号群（满）
+
+![](data/qqun.png)
+
+2号群：
+
+![](data/qq2.jpeg)
+
+微信拉群：
+
+![](data/fate2.jpeg)
 
 
-
-![](qqun.png)
-
-进群请先自我介绍下，例如您的学校或单位，从事什么研究等。谢啦！
 
 [网易云课堂视频课程1-聊天机器人](https://study.163.com/course/introduction/1005049028.htm?utm_source=400000000173015&utm_medium=share&utm_campaign=commission&hideAppEntrance=1)   [网易云课堂视频课程2-知识图谱](https://study.163.com/course/introduction/1004964005.htm?utm_source=400000000173015&utm_medium=share&utm_campaign=commission&hideAppEntrance=1)
 
