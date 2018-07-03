@@ -59,9 +59,9 @@ end
 --[[ Forward coupling: Copy encoder cell and output to decoder LSTM ]]--
 function Seq2Seq:forwardConnect(inputSeqLen)
   self.decoderLSTM.userPrevOutput =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevOutput, self.encoderLSTM.outputs[inputSeqLen])
+    nn.utils.recursiveCopy(self.decoderLSTM.userPrevOutput, self.encoderLSTM.outputs[inputSeqLen])
   self.decoderLSTM.userPrevCell =
-    nn.rnn.recursiveCopy(self.decoderLSTM.userPrevCell, self.encoderLSTM.cells[inputSeqLen])
+    nn.utils.recursiveCopy(self.decoderLSTM.userPrevCell, self.encoderLSTM.cells[inputSeqLen])
 end
 
 --[[ Backward coupling: Copy decoder gradients to encoder LSTM ]]--
@@ -84,7 +84,7 @@ function Seq2Seq:eval(input)
   -- Forward <go> and all of it's output recursively back to the decoder
   local output = {self.goToken}
   for i = 1, MAX_OUTPUT_SIZE do
-    local prediction = self.decoder:forward(torch.Tensor(output))[#output]
+    local prediction = self.decoder:forward(torch.Tensor({output}):t())[#output][1]
     -- prediction contains the probabilities for each word IDs.
     -- The index of the probability is the word ID.
     local prob, wordIds = prediction:topk(5, 1, true, true)
