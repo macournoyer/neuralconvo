@@ -28,6 +28,3 @@ Use https://github.com/dgkae/dgk_lost_conv as training corpus. The chinese sente
 
 ![](data/qq2.jpeg)
 
-
-
-谢谢OBRO支持！
