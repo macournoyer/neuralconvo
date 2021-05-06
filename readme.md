@@ -19,12 +19,3 @@ Use https://github.com/dgkae/dgk_lost_conv as training corpus. The chinese sente
 
 ## Rwt
 本repo已不在维护，有几个聊天群：
-
-1:
-
-![](data/qqun.png)
-
-2：
-
-![](data/qq2.jpeg)
-
